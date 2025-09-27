@@ -18,16 +18,21 @@ datasource db {
 model usuarios {
   id             String           @id @default(uuid()) @db.Uuid
   nombre         String
+  apellidos      String
+  ci             String
   correo         String           @unique
   telefono       String?
   contrasena     String           @map("contraseña")
-  rol            Rol
+  rol            Rol              @default(cliente)
   foto_perfil    String?
   created_at     DateTime         @default(now()) @db.Timestamp(6)
   updated_at     DateTime         @updatedAt @db.Timestamp(6)
+
+  //relaciones
   notificaciones notificaciones[] @relation("UsuarioNotificaciones")
   qrs_admin      qrs[]            @relation("QRAdmin")
   reservas       reservas[]
+  complejos      complejos[]
 
   @@map("usuarios")
 }
@@ -40,8 +45,13 @@ model complejos {
   logotipo   String?
   created_at DateTime  @default(now()) @db.Timestamp(6)
   updated_at DateTime  @updatedAt @db.Timestamp(6)
+
+  //dueño del complejo
+  admin_id   String    @db.Uuid
+  admin      usuarios  @relation(fields: [admin_id], references: [id])
   canchas    canchas[]
 
+  @@index([admin_id])
   @@map("complejos")
 }
 
