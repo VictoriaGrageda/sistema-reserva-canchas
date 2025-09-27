@@ -1,18 +1,21 @@
 import express, { Request, Response } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
+app.use(cors());
+app.use(helmet());
 app.use(express.json());
+app.use(morgan("dev"));
 
-app.get("/", (req: Request, res: Response) => {
-  res.json({
-    message: "Hola mundo",
-  });
+app.get("/", (_req: Request, res: Response) => {
+  res.json({ message: "Bienvenido al backend del sistema de reserva de canchas" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+app.get("/health", (_req: Request, res: Response) => {
+  res.json({ ok: true });
 });
 
 export default app;
