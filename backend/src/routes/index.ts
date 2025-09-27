@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import auth from './auth.routes';
+import authRoutes from './auth.routes';
 
 const api = Router();
-api.use('/auth', auth);
+api.use('/auth', authRoutes);   // => /api/v1/auth/register
 
 export default api;
