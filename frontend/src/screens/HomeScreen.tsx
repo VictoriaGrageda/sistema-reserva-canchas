@@ -12,7 +12,7 @@ export default function HomeScreen({ navigation }: NavProps<'Home'>) {
           <Text style={styles.actionTitle}>Reservar Cancha</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.action, { borderColor: '#26A65B' }]} onPress={() => { /* navegar a mis reservas */ }}>
+        <TouchableOpacity style={[styles.action, { borderColor: '#0E7940' }]} onPress={() => { /* navegar a mis reservas */ }}>
           <Text style={styles.actionTitle}>Mis reservas</Text>
         </TouchableOpacity>
 

@@ -16,7 +16,7 @@ export default function RegisterScreen({ navigation }: NavProps<'Register'>) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.lightGreen }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.green }} contentContainerStyle={styles.container}>
       <Image source={require('../../assets/images/ball.png')} style={styles.ball} />
       <View style={styles.card}>
         <FormInput label="Nombre/s" value={state.nombres} onChangeText={set('nombres')} />

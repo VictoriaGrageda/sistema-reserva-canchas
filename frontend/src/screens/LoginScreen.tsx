@@ -27,7 +27,7 @@ export default function LoginScreen({ navigation }: NavProps<'Login'>) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#128055', padding: 20, alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#0E7940', padding: 20, alignItems: 'center', justifyContent: 'center' },
   ball: { width: 90, height: 90, marginBottom: 18, resizeMode: 'contain' },
   card: { width: '100%', borderRadius: 16, backgroundColor: colors.white, padding: 16, gap: 8 },
 });
