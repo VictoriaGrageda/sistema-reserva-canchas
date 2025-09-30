@@ -15,3 +15,16 @@ message: 'Las contraseñas no coinciden',
 });
 
 export type RegisterInput = z.infer<typeof RegisterSchema>;
+
+export const LoginSchema = z.object({
+    correo: z
+    .string()
+    .min(1, "El correo es obligatorio")
+    .email("Correo inválido")
+    .transform((v) => v.trim().toLowerCase()),
+    contrasena: z
+    .string()
+    .min(6, "La contraseña debe tener al menos 6 caracteres"),
+});
+
+export type LoginInput = z.infer<typeof LoginSchema>;

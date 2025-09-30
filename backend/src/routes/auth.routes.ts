@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { AuthController } from '../controllers/auth.controller';
+import { register, login } from '../controllers/auth.controller';
 import { validate } from '../middlewares/validate.middleware';
-import { RegisterSchema } from '../validations/auth.schema';
+import { RegisterSchema, LoginSchema } from '../validations/auth.schema';
+
 
 const r = Router();
-r.post('/register', validate(RegisterSchema), AuthController.register);
-
+r.post('/register', validate(RegisterSchema), register);
+r.post("/login", validate(LoginSchema), login);
 export default r;

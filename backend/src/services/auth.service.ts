@@ -1,12 +1,13 @@
 import { UserRepo } from '../repositories/user.repo';
 import { RegisterInput } from '../validations/auth.schema';
 import { hash } from '../utils/password';
+import { compare } from "../utils/password";
+import { signToken } from "../lib/jwt";
+import type { LoginInput } from "../validations/auth.schema";
 
-export const AuthService = {
-  async register(dto: RegisterInput) {
+export const register = async (dto : RegisterInput) => {
     const correo = dto.correo.trim().toLowerCase();
 
-    // pre-chequeo para UX
     const exists = await UserRepo.findByEmail(correo);
     if (exists) {
       const err: any = new Error('El correo ya está registrado');
@@ -31,7 +32,6 @@ export const AuthService = {
       const { contrasena, ...safe } = user as any;
       return safe;
     } catch (e: any) {
-      // Prisma unique constraint
       if (e?.code === 'P2002') {
         const target = Array.isArray(e.meta?.target) ? e.meta.target.join(',') : String(e.meta?.target ?? '');
         const err: any = new Error(
@@ -42,5 +42,32 @@ export const AuthService = {
       }
       throw e;
     }
-  },
+  };
+
+// LOGIN (usa UserRepo.findByEmail)
+export const login = async (dto: LoginInput) => {
+  const correo = dto.correo.trim().toLowerCase();
+
+  const user = await UserRepo.findByEmail(correo);
+  if (!user) {
+    const err: any = new Error("Credenciales inválidas");
+    err.status = 401;
+    throw err;
+  }
+
+  const ok = await compare(dto.contrasena, user.contrasena);
+  if (!ok) {
+    const err: any = new Error("Credenciales inválidas");
+    err.status = 401;
+    throw err;
+  }
+
+  const token = signToken({ id: user.id, correo: user.correo, rol: user.rol });
+
+  const { contrasena, ...safeUser } = user as any;
+
+  const expiresIn = 24 * 60 * 60; 
+
+  return { user: safeUser, token, expiresIn };
 };
+
