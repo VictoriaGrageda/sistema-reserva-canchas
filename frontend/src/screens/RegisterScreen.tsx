@@ -16,7 +16,7 @@ export default function RegisterScreen({ navigation }: NavProps<'Register'>) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.green }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.yellow }} contentContainerStyle={styles.container}>
       <Image source={require('../../assets/images/ball.png')} style={styles.ball} />
       <View style={styles.card}>
         <FormInput label="Nombre/s" value={state.nombres} onChangeText={set('nombres')} />
@@ -34,6 +34,6 @@ export default function RegisterScreen({ navigation }: NavProps<'Register'>) {
 
 const styles = StyleSheet.create({
   container: { padding: 20, alignItems: 'center' },
-  ball: { width: 90, height: 90, marginVertical: 18, resizeMode: 'contain' },
-  card: { width: '100%', borderRadius: 16, backgroundColor: colors.white, padding: 16, gap: 8, elevation: 2 },
+  ball: { width: 180, height: 180, marginVertical: 18, resizeMode: 'contain' },
+  card: { width: '100%', borderRadius: 16, backgroundColor: colors.white, padding: 16, gap: 8, elevation: 2, borderColor: colors.lightGreen, borderWidth: 2},
 });

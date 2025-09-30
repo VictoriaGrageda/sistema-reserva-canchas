@@ -16,7 +16,7 @@ export default function LoginScreen({ navigation }: NavProps<'Login'>) {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../../assets/images/ball.png')} style={styles.ball} />
+      <Image source={require('../../assets/images/ball.png')} style={styles.ball} /> 
       <View style={styles.card}>
         <FormInput label="Correo" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
         <FormInput label="Contraseña" secureTextEntry value={pwd} onChangeText={setPwd} />
@@ -27,7 +27,7 @@ export default function LoginScreen({ navigation }: NavProps<'Login'>) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0E7940', padding: 20, alignItems: 'center', justifyContent: 'center' },
-  ball: { width: 90, height: 90, marginBottom: 18, resizeMode: 'contain' },
+  container: { flex: 1, backgroundColor:colors.green, padding: 20, alignItems: 'center', justifyContent: 'center' },
+  ball: { width: 210, height: 210, marginBottom: 18, resizeMode: 'contain' },
   card: { width: '100%', borderRadius: 16, backgroundColor: colors.white, padding: 16, gap: 8 },
 });
