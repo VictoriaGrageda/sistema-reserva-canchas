@@ -1,28 +1,32 @@
-import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
-import colors from '../theme/colors';
+import React from "react";
+import { TextInput, View, Text, TextInputProps } from "react-native";
 
-type Props = TextInputProps & { label?: string; errorText?: string };
+type Props = TextInputProps & {
+  errorText?: string | null;
+};
 
-export default function FormInput({ label, errorText, style, ...rest }: Props) {
+export default function FormInput({ errorText, style, ...rest }: Props) {
   return (
-    <View style={styles.wrapper}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
-      <TextInput style={[styles.input, style]} placeholderTextColor={colors.gray} {...rest} />
-      {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
+    <View style={{ marginBottom: 10 }}>
+      <TextInput
+        {...rest}
+        style={[
+          {
+            borderWidth: 1,
+            borderRadius: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderColor: errorText ? "#D00" : "#CCC",
+            backgroundColor: "#FFF",
+          },
+          style,
+        ]}
+      />
+      {!!errorText && (
+        <Text style={{ color: "#D00", marginTop: 4, fontSize: 12 }}>
+          {errorText}
+        </Text>
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: { marginBottom: 12 },
-  label: { marginBottom: 6, color: colors.dark, fontWeight: '600' },
-  input: {
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    backgroundColor: colors.white,
-    paddingHorizontal: 12,
-  },
-  error: { color: colors.red, marginTop: 4, fontSize: 12 },
-});
