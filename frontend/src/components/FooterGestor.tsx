@@ -16,26 +16,25 @@ import colors from "../theme/colors";
 
 
 type Props = {
-  // onGoHistory={() => navigation.navigate("History")}
-  // onGoSettings={() => navigation.navigate("Settings")}
   onLogout?: () => void;
-
 };
 
 
 export default function Footer({onLogout}: Props) {
-  const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(false);
+
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const goHome = () => {
-    setOpen(false);
-    navigation.replace("Home");
-  };
+    const goHome = () => {
+        setOpen(false);
+        navigation.replace("HomeGestor");
+    };
+
   return (
     <>
       <SafeAreaView style={styles.safe}>
         <View style={styles.footer}>
-          {/* Marca / Logo (puedes cambiar por Image si tienes asset) */}
+          {/* Marca  */}
           <Text style={styles.brand}>
             <Text style={styles.brandPart1}>F</Text>
             <Text style={styles.brandPart2}>ast</Text>
@@ -66,34 +65,19 @@ export default function Footer({onLogout}: Props) {
 
           <Pressable
             style={[styles.menuItem, { backgroundColor: "#FAD4D8" }]}
+            // onPress={() => props.onGoHome?.()}
             onPress={goHome}
           >
             <Text style={styles.menuText}>INICIO</Text>
           </Pressable>
+          
 
           <Pressable
-            style={[styles.menuItem, { backgroundColor: "#D6EDF1" }]}
-            // onPress={() => props.onGoHistory?.()}
-            onPress={() => {}}
-          >
-            <Text style={styles.menuText}>HISTORIAL DE RESERVAS</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.menuItem, { backgroundColor: "#E6F6E6" }]}
-            // onPress={() => props.onGoSettings?.()}
-            onPress={() => {}}
-          >
-            <Text style={styles.menuText}>CONFIGURACIONES</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.menuItem, { backgroundColor: "#EEDAF0" }]}
+            style={[styles.menuItem, { backgroundColor: "#c8ddefff" }]}
             onPress={() => {
                 setOpen(false);
                 onLogout?.();
-              }}
-            
+              }}  
           >
             <Text style={styles.menuText}>CERRAR SESIÓN</Text>
           </Pressable>

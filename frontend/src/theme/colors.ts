@@ -1,6 +1,6 @@
 const colors = {
   green: '#0b4124ff',
-  lightGreen: '#a8dcbfff',
+  lightGreen: '#E4FBE1',
   mint: '#E5F6EF',
   purple: '#514B97',
   accent: '#AE53B4',
