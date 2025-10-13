@@ -67,7 +67,7 @@ export default function RegisterScreen({ navigation }: Props) {
       setLoading(true);
       await AuthAPI.register(payload);
       Alert.alert("Registro", "¡Cuenta creada!", [
-        { text: "OK", onPress: () => navigation.replace("Login") },
+        { text: "OK", onPress: () => navigation.replace("PostRegister") },
       ]);
     } catch (e: any) {
       const { status, message, fieldErrors } = parseApiError(e);
