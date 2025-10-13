@@ -116,8 +116,8 @@ const styles = StyleSheet.create({
   brand: { fontSize: 40, fontWeight: "800", letterSpacing: 1 },
   brandPart1: { color: "#7C0F0F" },  // rojo oscuro tipo pincel
   brandPart2: { color: "#7C0F0F" },
-  brandPart3: { color: "#E3EC91" },  // amarillo del mock
-  brandPart4: { color: "#E3EC91" },
+  brandPart3: { color: colors.yellow },  // amarillo del mock
+  brandPart4: { color: colors.yellow },
 
   userBtn: { padding: 6 },
   userCircle: {
