@@ -6,6 +6,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import PostRegisterScreen from '../screens/PostRegisterScreen';   
 import HomeScreen from '../screens/HomeScreen';
+import HomeGestorScreen from '../screens_gestor/HomeGestorScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -17,6 +18,8 @@ export default function AppNavigator() {
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="PostRegister" component={PostRegisterScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="HomeGestor" component={HomeGestorScreen}/>
+      
     </Stack.Navigator>
   );
 }

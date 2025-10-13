@@ -1,4 +1,4 @@
-// screens/PostRegisterScreen.tsx
+// screens/PostRegisterScreen.tsx PARA DEFINIR EL TIPO DE ROL QUE SE TENDRA : FALTA BACKEND
 import React from "react";
 import { SafeAreaView, View, Text, Image, TouchableOpacity, StyleSheet, StatusBar, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,7 +42,7 @@ export default function PostRegisterScreen({ navigation }: Props) {
         <TouchableOpacity
           style={[styles.cta, styles.ctaYellow]}
           activeOpacity={0.85}
-          onPress={() => {/* navigation.navigate("OfferVenue") */}}
+          onPress={() => navigation.replace("HomeGestor")}
         >
           <Text style={styles.ctaTextDark}>Presiona aquí</Text>
         </TouchableOpacity>
