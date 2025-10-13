@@ -54,7 +54,7 @@ export default function Footer({onLogout}: Props) {
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
         <View style={styles.menuCard}>
-          <Text style={styles.menuTitle}>Menú</Text>
+       
 
           <Pressable
             style={[styles.menuItem, { backgroundColor: "#FAD4D8" }]}
@@ -154,13 +154,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 10 },
   },
-  menuTitle: {
-    textAlign: "center",
-    fontWeight: "800",
-    fontSize: 16,
-    color: colors.dark,
-    marginBottom: 4,
-  },
+  
   menuItem: {
     paddingVertical: 14,
     borderRadius: 999,
