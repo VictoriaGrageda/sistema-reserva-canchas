@@ -1,10 +1,16 @@
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+
 import express, { Request, Response, NextFunction } from 'express';
 import api from './routes';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
+app.use(cors());
+app.use(helmet());
 app.use(express.json());
+app.use(morgan("dev"));
 
 // Healthcheck
 app.get('/health', (_req: Request, res: Response) => {
@@ -20,8 +26,8 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(status).json({ message: err?.message ?? 'Error interno' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+app.get("/health", (_req: Request, res: Response) => {
+  res.json({ ok: true });
 });
 
 export default app;

@@ -15,6 +15,7 @@ import FormInput from "../components/FormInput";
 import PrimaryButton from "../components/PrimaryButton";
 import { AuthAPI } from "../api/auth";
 import { parseApiError, humanMessageFor } from "../utils/httpErrors";
+import { useAuth } from "../context/AuthContext"; // ⬅️ NUEVO
 
 type Props = NativeStackScreenProps<any, "Register">;
 
@@ -22,6 +23,8 @@ type FE = Record<string, string[]>;
 
 
 export default function RegisterScreen({ navigation }: Props) {
+  const { login } = useAuth(); // ⬅️ NUEVO
+
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [ci, setCi] = useState("");
@@ -65,20 +68,21 @@ export default function RegisterScreen({ navigation }: Props) {
 
     try {
       setLoading(true);
+      // 1) Registrar
       await AuthAPI.register(payload);
-      Alert.alert("Registro", "¡Cuenta creada!", [
-        { text: "OK", onPress: () => navigation.replace("PostRegister") },
-      ]);
+
+      // 2) Login inmediato (guarda token y carga /usuarios/me en el contexto)
+      await login(correo.trim(), pass);
+
+      // 3) Ir a selección de rol (sin perder historial)
+      navigation.reset({ index: 0, routes: [{ name: "PostRegister" }] });
     } catch (e: any) {
       const { status, message, fieldErrors } = parseApiError(e);
 
-      // Si tenemos fieldErrors de Zod, pínchalos en el formulario
-      if (fieldErrors) {
-        setErrors(fieldErrors);
-      }
+      if (fieldErrors) 
+        setErrors(fieldErrors); // pínchalos en el formulario
 
-      // Mensaje humano por status (si aplica)
-      const friendly = humanMessageFor(status) || message;
+      const friendly = humanMessageFor(status, "register") || message || "No se pudo registrar.";
       Alert.alert("Registro", friendly);
     } finally {
       setLoading(false);
@@ -90,35 +94,71 @@ export default function RegisterScreen({ navigation }: Props) {
       behavior={Platform.select({ ios: "padding", android: undefined })}
       style={{ flex: 1, backgroundColor: colors.yellow }}
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={{ flex: 1, padding: 24, justifyContent: "center", gap: 12 }}>
-          
-          <Image source={require('../../assets/images/ball.png')} style={styles.ball} />
+          <Image source={require("../../assets/images/ball.png")} style={styles.ball} />
 
           <Text style={{ fontSize: 22, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
             Crear cuenta
           </Text>
 
-          
           <View style={styles.card}>
-            <FormInput placeholder="Nombre(s)" value={nombre} onChangeText={setNombre}
-              errorText={first(errors.nombre)} />
-            <FormInput placeholder="Apellidos" value={apellidos} onChangeText={setApellidos}
-              errorText={first(errors.apellidos)} />
-            <FormInput placeholder="CI" value={ci} onChangeText={setCi} keyboardType="number-pad"
-              errorText={first(errors.ci)} />
-            <FormInput placeholder="Correo" value={correo} onChangeText={setCorreo}
-              autoCapitalize="none" keyboardType="email-address"
-              errorText={first(errors.correo)} />
-            <FormInput placeholder="Teléfono o Celular" value={telefono} onChangeText={setTelefono}
-              keyboardType="phone-pad" errorText={first(errors.telefono)} />
-            <FormInput placeholder="Contraseña" value={pass} onChangeText={setPass} secureTextEntry
-              errorText={first(errors.contrasena)} />
-            <FormInput placeholder="Confirmar contraseña" value={pass2} onChangeText={setPass2} secureTextEntry
-              errorText={first(errors.confirmarContrasena)} />
+            <FormInput
+              placeholder="Nombre(s)"
+              value={nombre}
+              onChangeText={setNombre}
+              errorText={first(errors.nombre)}
+            />
+            <FormInput
+              placeholder="Apellidos"
+              value={apellidos}
+              onChangeText={setApellidos}
+              errorText={first(errors.apellidos)}
+            />
+            <FormInput
+              placeholder="CI"
+              value={ci}
+              onChangeText={setCi}
+              keyboardType="number-pad"
+              errorText={first(errors.ci)}
+            />
+            <FormInput
+              placeholder="Correo"
+              value={correo}
+              onChangeText={setCorreo}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              errorText={first(errors.correo)}
+            />
+            <FormInput
+              placeholder="Teléfono o Celular"
+              value={telefono}
+              onChangeText={setTelefono}
+              keyboardType="phone-pad"
+              errorText={first(errors.telefono)}
+            />
+            <FormInput
+              placeholder="Contraseña"
+              value={pass}
+              onChangeText={setPass}
+              secureTextEntry
+              errorText={first(errors.contrasena)}
+            />
+            <FormInput
+              placeholder="Confirmar contraseña"
+              value={pass2}
+              onChangeText={setPass2}
+              secureTextEntry
+              errorText={first(errors.confirmarContrasena)}
+            />
 
-            <PrimaryButton title={loading ? "Creando..." : "Crear cuenta"} onPress={onRegister} disabled={loading} />
-          </View> 
+            <PrimaryButton
+              title={loading ? "Creando..." : "Crear cuenta"}
+              onPress={onRegister}
+              disabled={loading}
+            />
+          </View>
+
           <Text style={{ textAlign: "center", marginTop: 12 }}>
             ¿Ya tienes cuenta?{" "}
             <Text style={{ color: colors.red, fontWeight: "700" }} onPress={() => navigation.replace("Login")}>
@@ -134,9 +174,18 @@ export default function RegisterScreen({ navigation }: Props) {
     </KeyboardAvoidingView>
   );
 }
-const styles = StyleSheet.create({
-  container: { padding: 20, alignItems: 'center' },
-  ball: { width: 180, height: 180, marginVertical: 18, resizeMode: 'contain', alignSelf:"center", },
-  card: { width: '100%', borderRadius: 16, backgroundColor: colors.white, padding: 16, gap: 8, elevation: 2, borderColor: colors.lightGreen, borderWidth: 2},
-});
 
+const styles = StyleSheet.create({
+  container: { padding: 20, alignItems: "center" },
+  ball: { width: 180, height: 180, marginVertical: 18, resizeMode: "contain", alignSelf: "center" },
+  card: {
+    width: "100%",
+    borderRadius: 16,
+    backgroundColor: colors.white,
+    padding: 16,
+    gap: 8,
+    elevation: 2,
+    borderColor: colors.lightGreen,
+    borderWidth: 2,
+  },
+});
