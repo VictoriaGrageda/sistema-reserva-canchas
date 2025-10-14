@@ -1,33 +1,76 @@
-import { View, Image, StyleSheet, Alert } from 'react-native';
-import { useState } from 'react';
-import colors from '../theme/colors';
-import type { NavProps } from '../navigation/types';
-import FormInput from '../components/FormInput';
-import PrimaryButton from '../components/PrimaryButton';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import FormInput from "../components/FormInput";
+import PrimaryButton from "../components/PrimaryButton";
+import { AuthAPI } from "../api/auth";
+import { parseApiError, humanMessageFor } from "../utils/httpErrors";
+import ball from "../../assets/images/ball.png";
 
-export default function LoginScreen({ navigation }: NavProps<'Login'>) {
-  const [email, setEmail] = useState('');
-  const [pwd, setPwd] = useState('');
+type Props = NativeStackScreenProps<any, "Login">;
 
-  const login = () => {
-    if (!email || !pwd) return Alert.alert('Login', 'Completa tus credenciales');
-    navigation.replace('Home');
+export default function LoginScreen({ navigation }: Props) {
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const onLogin = async () => {
+    if (!correo || !contrasena) {
+      Alert.alert("Login", "Completa tus credenciales");
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = await AuthAPI.login({ correo, contrasena });
+      Alert.alert("Bienvenido", `${data.user.nombre} (${data.user.rol})`);
+      navigation.replace("Home");
+    } catch (e: any) {
+      const { status, message } = parseApiError(e);
+      const friendly = humanMessageFor(status, "login") || message;
+      Alert.alert("Login", friendly);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require('../../assets/images/ball.png')} style={styles.ball} />
-      <View style={styles.card}>
-        <FormInput label="Correo" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-        <FormInput label="Contraseña" secureTextEntry value={pwd} onChangeText={setPwd} />
-        <PrimaryButton title="Ingresar" onPress={login} />
-      </View>
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.select({ ios: "padding", android: undefined })}
+      style={{ flex: 1 }}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={{ flex: 1, padding: 24, justifyContent: "center", gap: 16 }}>
+          <Image source={ball} style={{ width: 120, height: 120, alignSelf: "center", marginBottom: 8 }} resizeMode="contain" />
+          <Text style={{ fontSize: 22, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+            Iniciar sesión
+          </Text>
+
+          <FormInput placeholder="Correo" value={correo} onChangeText={setCorreo}
+            keyboardType="email-address" autoCapitalize="none" />
+          <FormInput placeholder="Contraseña" secureTextEntry value={contrasena} onChangeText={setContrasena} />
+
+          <PrimaryButton title={loading ? "Ingresando..." : "Ingresar"} onPress={onLogin} disabled={loading} />
+
+          <Text style={{ textAlign: "center", marginTop: 12 }}>
+            ¿No tienes cuenta?{" "}
+            <Text style={{ color: "#0a7", fontWeight: "700" }} onPress={() => navigation.navigate("Register")}>
+              Regístrate
+            </Text>
+          </Text>
+
+          <Text style={{ textAlign: "center", marginTop: 18, opacity: 0.6 }}>
+            API: {process.env.EXPO_PUBLIC_API_URL || "(no definida)"}
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#128055', padding: 20, alignItems: 'center', justifyContent: 'center' },
-  ball: { width: 90, height: 90, marginBottom: 18, resizeMode: 'contain' },
-  card: { width: '100%', borderRadius: 16, backgroundColor: colors.white, padding: 16, gap: 8 },
-});

@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import colors from '../theme/colors';
 import type { NavProps } from '../navigation/types';
-import Footer from "../components/Footer";
+import Footer from "../components/FooterGestor";
 
-export default function HomeScreen({ navigation }: NavProps<'Home'>) {
+export default function HomeScreen({ navigation }: NavProps<'HomeGestor'>) {
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.green} />
@@ -13,21 +13,31 @@ export default function HomeScreen({ navigation }: NavProps<'Home'>) {
       {/* Contenido centrado debajo del header */}
       <View style={styles.content}>
         <View style={styles.panel}>
+
           <TouchableOpacity
             style={[styles.action, styles.actionPrimary]}
             activeOpacity={0.85}
-            onPress={() => { /* navegar a reservar */ }}
+            onPress={() => navigation.navigate('RegistroCanchas')}
           >
-            <Text style={styles.actionTitleLight}>Reservar Cancha</Text>
+            <Text style={styles.actionTitleLight}>Registrar Cancha</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.action, styles.actionSecondary]}
             activeOpacity={0.85}
-            onPress={() => { /* navegar a mis reservas */ }}
+            onPress={() => { /* navegar a mis canchas registradas */ }}
           >
-            <Text style={styles.actionTitleDark}>Mis reservas</Text>
+            <Text style={styles.actionTitleDark}>Mis Canchas</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.action, styles.actionTerth]}
+            activeOpacity={0.85}
+            onPress={() => { /* navegar a mis solicitudes de reservas pendientes a verificacion */ }}
+          >
+            <Text style={styles.actionTitleDark}>Solicitud de reservas </Text>
+          </TouchableOpacity>
+
         </View>
       </View>
     </View>
@@ -84,7 +94,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red, // rojo de tu theme
   },
   actionSecondary: {
-    backgroundColor: '#51e91fff',
+    backgroundColor: '#1cc616ff',
+  },
+  actionTerth: {
+    backgroundColor: colors.accent,
   },
 
   // Tipografías
