@@ -7,6 +7,7 @@ export type RootStackParamList = {
   PostRegister: undefined;
   Home: undefined;
   HomeGestor: undefined;
+  RegistroCanchas: undefined;
 };
 
 export type NavProps<T extends keyof RootStackParamList> =
