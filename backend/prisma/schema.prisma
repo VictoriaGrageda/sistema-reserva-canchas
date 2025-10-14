@@ -14,8 +14,165 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
+
+model usuarios {
+  id             String           @id @default(uuid()) @db.Uuid
+  nombre         String
+  apellidos      String
+  ci             String
+  correo         String           @unique
+  telefono       String?
+  contrasena     String           @map("contraseña")
+  rol            Rol              @default(cliente)
+  foto_perfil    String?
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  updated_at     DateTime         @updatedAt @db.Timestamp(6)
+
+  //relaciones
+  notificaciones notificaciones[] @relation("UsuarioNotificaciones")
+  qrs_admin      qrs[]            @relation("QRAdmin")
+  reservas       reservas[]
+  complejos      complejos[]
+
+  @@map("usuarios")
+}
+
+model complejos {
+  id         String    @id @default(uuid()) @db.Uuid
+  nombre     String
+  direccion  String?
+  telefono   String?
+  logotipo   String?
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime  @updatedAt @db.Timestamp(6)
+
+  //dueño del complejo
+  admin_id   String    @db.Uuid
+  admin      usuarios  @relation(fields: [admin_id], references: [id])
+  canchas    canchas[]
+
+  @@index([admin_id])
+  @@map("complejos")
+}
+
+model canchas {
+  id          String     @id @default(uuid()) @db.Uuid
+  complejo_id String     @db.Uuid
+  nombre      String
+  deporte     String
+  superficie  String?
+  precio_hora Decimal    @db.Decimal(10, 2)
+  created_at  DateTime   @default(now()) @db.Timestamp(6)
+  updated_at  DateTime   @updatedAt @db.Timestamp(6)
+  complejo    complejos  @relation(fields: [complejo_id], references: [id])
+  horarios    horarios[]
+
+  @@index([complejo_id])
+  @@map("canchas")
+}
+
+model horarios {
+  id            String          @id @default(uuid()) @db.Uuid
+  cancha_id     String          @db.Uuid
+  fecha         DateTime        @db.Date
+  hora_inicio   DateTime        @db.Time(6)
+  hora_fin      DateTime        @db.Time(6)
+  disponible    Boolean         @default(true)
+  cancha        canchas         @relation(fields: [cancha_id], references: [id])
+  reserva_items reserva_items[]
+
+  @@index([cancha_id])
+  @@map("horarios")
+}
+
+model reservas {
+  id             String           @id @default(uuid()) @db.Uuid
+  usuario_id     String           @db.Uuid
+  estado         EstadoReserva    @default(pendiente)
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  notificaciones notificaciones[] @relation("ReservaNotificaciones")
+  pagos          pagos[]
+  items          reserva_items[]
+  usuario        usuarios         @relation(fields: [usuario_id], references: [id])
+
+  @@index([usuario_id])
+  @@map("reservas")
+}
+
+model reserva_items {
+  id         String   @id @default(uuid()) @db.Uuid
+  reserva_id String   @db.Uuid
+  horario_id String   @db.Uuid
+  precio     Decimal? @db.Decimal(10, 2)
+  horario    horarios @relation(fields: [horario_id], references: [id])
+  reserva    reservas @relation(fields: [reserva_id], references: [id])
+
+  @@index([reserva_id])
+  @@index([horario_id])
+  @@map("reserva_items")
+}
+
+model pagos {
+  id         String     @id @default(uuid()) @db.Uuid
+  reserva_id String     @db.Uuid
+  qr_id      String?    @db.Uuid
+  estado     EstadoPago @default(pendiente)
+  fecha_pago DateTime?  @db.Timestamp(6)
+  qr         qrs?       @relation(fields: [qr_id], references: [id])
+  reserva    reservas   @relation(fields: [reserva_id], references: [id])
+
+  @@index([reserva_id])
+  @@index([qr_id])
+  @@map("pagos")
+}
+
+model qrs {
+  id         String   @id @default(uuid()) @db.Uuid
+  admin_id   String   @db.Uuid
+  imagen_qr  String
+  vigente    Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  pagos      pagos[]
+  admin      usuarios @relation("QRAdmin", fields: [admin_id], references: [id])
+
+  @@index([admin_id])
+  @@map("qrs")
+}
+
+model notificaciones {
+  id         String            @id @default(uuid()) @db.Uuid
+  usuario_id String            @db.Uuid
+  reserva_id String?           @db.Uuid
+  mensaje    String
+  tipo       TipoNotificacion?
+  created_at DateTime          @default(now()) @db.Timestamp(6)
+  reserva    reservas?         @relation("ReservaNotificaciones", fields: [reserva_id], references: [id])
+  usuario    usuarios          @relation("UsuarioNotificaciones", fields: [usuario_id], references: [id])
+
+  @@index([usuario_id])
+  @@index([reserva_id])
+  @@map("notificaciones")
+}
+
+enum Rol {
+  cliente
+  administrador
+}
+
+enum EstadoReserva {
+  pendiente
+  confirmada
+  cancelada
+}
+
+enum EstadoPago {
+  pendiente
+  confirmado
+  rechazado
+}
+
+enum TipoNotificacion {
+  reserva_creada
+  pago_confirmado
+  recordatorio
 }
