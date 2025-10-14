@@ -11,7 +11,7 @@ export default function CanchasRegistradasScreen({ navigation }: NavProps<"Canch
       <StatusBar barStyle="light-content" backgroundColor={colors.green} />
       <Footer onLogout={() => navigation.replace("Welcome")} />
 
-      {/* Contenido base */}
+      
       <View style={styles.content}>
         <Text style={styles.placeholder}>Canchas registradas</Text>
         <Text style={styles.subtitle}>Aquí verás la lista de tus canchas</Text>
@@ -23,7 +23,7 @@ export default function CanchasRegistradasScreen({ navigation }: NavProps<"Canch
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.lightGreen, // fondo base
+    backgroundColor: colors.lightGreen, 
   },
   content: {
     flex: 1,

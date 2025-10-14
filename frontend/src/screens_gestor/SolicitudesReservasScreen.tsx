@@ -16,7 +16,7 @@ export default function SolicitudesReservasScreen({ navigation }: NavProps<"Soli
         <Text style={styles.title}>Solicitudes de reservas</Text>
         <Text style={styles.subtitle}>Aquí verás las solicitudes pendientes</Text>
 
-        {/* Placeholder de lista */}
+        
         <View style={styles.card}>
           <Text style={styles.cardText}>No hay solicitudes por ahora</Text>
         </View>
@@ -28,7 +28,7 @@ export default function SolicitudesReservasScreen({ navigation }: NavProps<"Soli
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.lightGreen, // fondo base
+    backgroundColor: colors.lightGreen,
   },
   content: {
     flex: 1,
