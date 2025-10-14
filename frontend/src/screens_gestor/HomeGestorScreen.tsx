@@ -1,14 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import colors from '../theme/colors';
 import type { NavProps } from '../navigation/types';
-
+import Footer from "../components/FooterGestor";
 
 export default function HomeScreen({ navigation }: NavProps<'HomeGestor'>) {
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.green} />
       
-    
+      <Footer onLogout={() => navigation.replace('Welcome')} />
+
       {/* Contenido centrado debajo del header */}
       <View style={styles.content}>
         <View style={styles.panel}>
@@ -16,7 +17,7 @@ export default function HomeScreen({ navigation }: NavProps<'HomeGestor'>) {
           <TouchableOpacity
             style={[styles.action, styles.actionPrimary]}
             activeOpacity={0.85}
-            onPress={() => { /* navegar a registro de canchas nuevas */ }}
+            onPress={() => navigation.navigate('RegistroCanchas')}
           >
             <Text style={styles.actionTitleLight}>Registrar Cancha</Text>
           </TouchableOpacity>
