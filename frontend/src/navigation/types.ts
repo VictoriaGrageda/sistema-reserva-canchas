@@ -8,6 +8,8 @@ export type RootStackParamList = {
   Home: undefined;
   HomeGestor: undefined;
   RegistroCanchas: undefined;
+  CanchasRegistradas: undefined;
+  SolicitudesReservas: undefined;
 };
 
 export type NavProps<T extends keyof RootStackParamList> =

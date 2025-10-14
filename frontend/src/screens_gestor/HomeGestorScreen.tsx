@@ -25,7 +25,7 @@ export default function HomeScreen({ navigation }: NavProps<'HomeGestor'>) {
           <TouchableOpacity
             style={[styles.action, styles.actionSecondary]}
             activeOpacity={0.85}
-            onPress={() => { /* navegar a mis canchas registradas */ }}
+            onPress={() => navigation.navigate('CanchasRegistradas')}
           >
             <Text style={styles.actionTitleDark}>Mis Canchas</Text>
           </TouchableOpacity>
@@ -33,7 +33,7 @@ export default function HomeScreen({ navigation }: NavProps<'HomeGestor'>) {
           <TouchableOpacity
             style={[styles.action, styles.actionTerth]}
             activeOpacity={0.85}
-            onPress={() => { /* navegar a mis solicitudes de reservas pendientes a verificacion */ }}
+            onPress={() => navigation.navigate('SolicitudesReservas')}
           >
             <Text style={styles.actionTitleDark}>Solicitud de reservas </Text>
           </TouchableOpacity>
