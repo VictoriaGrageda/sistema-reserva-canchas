@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const onLogin = async () => {
     if (!correo || !contrasena) {
@@ -29,9 +31,8 @@ export default function LoginScreen({ navigation }: Props) {
     }
     try {
       setLoading(true);
-      const data = await AuthAPI.login({ correo, contrasena });
-      Alert.alert("Bienvenido", `${data.user.nombre} (${data.user.rol})`);
-      navigation.replace("Home");
+      await login(correo, contrasena);     // ✅ guarda token y trae /usuarios/me
+      // No navegamos manualmente: AppNavigator cambia el stack por rol
     } catch (e: any) {
       const { status, message } = parseApiError(e);
       const friendly = humanMessageFor(status, "login") || message;

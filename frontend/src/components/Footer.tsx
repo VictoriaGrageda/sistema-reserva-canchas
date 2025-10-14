@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   View,
   Text,
@@ -7,6 +8,7 @@ import {
   Modal,
   SafeAreaView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -14,28 +16,36 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import colors from "../theme/colors";
 
-
 type Props = {
-  // onGoHistory={() => navigation.navigate("History")}
-  // onGoSettings={() => navigation.navigate("Settings")}
-  onLogout?: () => void;
-
+  onLogout?: () => void; // opcional; ya no es necesario, pero lo dejo por compatibilidad
 };
 
-
-export default function Footer({onLogout}: Props) {
+export default function Footer({ onLogout }: Props) {
   const [open, setOpen] = useState(false);
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { logout } = useAuth();
 
   const goHome = () => {
     setOpen(false);
     navigation.replace("Home");
   };
+
+  const doLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setOpen(false);
+      navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
+      onLogout?.();
+    }
+  };
+
   return (
     <>
       <SafeAreaView style={styles.safe}>
         <View style={styles.footer}>
-          {/* Marca / Logo (puedes cambiar por Image si tienes asset) */}
+          {/* LOGO/TEXTO: sin className, solo style */}
           <Text style={styles.brand}>
             <Text style={styles.brandPart1}>F</Text>
             <Text style={styles.brandPart2}>ast</Text>
@@ -43,7 +53,6 @@ export default function Footer({onLogout}: Props) {
             <Text style={styles.brandPart4}>ut</Text>
           </Text>
 
-          {/* Botón usuario */}
           <Pressable
             onPress={() => setOpen(true)}
             accessibilityRole="button"
@@ -58,43 +67,22 @@ export default function Footer({onLogout}: Props) {
         </View>
       </SafeAreaView>
 
-      {/* Menú modal */}
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
         <View style={styles.menuCard}>
-       
-
-          <Pressable
-            style={[styles.menuItem, { backgroundColor: "#FAD4D8" }]}
-            onPress={goHome}
-          >
+          <Pressable style={[styles.menuItem, { backgroundColor: "#FAD4D8" }]} onPress={goHome}>
             <Text style={styles.menuText}>INICIO</Text>
           </Pressable>
 
-          <Pressable
-            style={[styles.menuItem, { backgroundColor: "#D6EDF1" }]}
-            // onPress={() => props.onGoHistory?.()}
-            onPress={() => {}}
-          >
+          <Pressable style={[styles.menuItem, { backgroundColor: "#D6EDF1" }]} onPress={() => {}}>
             <Text style={styles.menuText}>HISTORIAL DE RESERVAS</Text>
           </Pressable>
 
-          <Pressable
-            style={[styles.menuItem, { backgroundColor: "#E6F6E6" }]}
-            // onPress={() => props.onGoSettings?.()}
-            onPress={() => {}}
-          >
+          <Pressable style={[styles.menuItem, { backgroundColor: "#E6F6E6" }]} onPress={() => {}}>
             <Text style={styles.menuText}>CONFIGURACIONES</Text>
           </Pressable>
 
-          <Pressable
-            style={[styles.menuItem, { backgroundColor: "#EEDAF0" }]}
-            onPress={() => {
-                setOpen(false);
-                onLogout?.();
-              }}
-            
-          >
+          <Pressable style={[styles.menuItem, { backgroundColor: "#EEDAF0" }]} onPress={doLogout}>
             <Text style={styles.menuText}>CERRAR SESIÓN</Text>
           </Pressable>
         </View>
@@ -104,12 +92,10 @@ export default function Footer({onLogout}: Props) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    backgroundColor: colors.green,
-  },
+  safe: { backgroundColor: colors.green },
   footer: {
     height: 200,
-    width: '100%',
+    width: "100%",
     backgroundColor: colors.green,
     flexDirection: "row",
     alignItems: "center",
@@ -118,20 +104,17 @@ const styles = StyleSheet.create({
     borderTopWidth: Platform.OS === "ios" ? StyleSheet.hairlineWidth : 0,
     borderTopColor: "#00000020",
   },
-
-  // Marca estilo aproximado al mock
   brand: { fontSize: 40, fontWeight: "800", letterSpacing: 1 },
-  brandPart1: { color: "#7C0F0F" },  // rojo oscuro tipo pincel
+  brandPart1: { color: "#7C0F0F" },
   brandPart2: { color: "#7C0F0F" },
-  brandPart3: { color: colors.yellow },  // amarillo del mock
+  brandPart3: { color: colors.yellow },
   brandPart4: { color: colors.yellow },
-
   userBtn: { padding: 6 },
   userCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.white,
+    backgroundColor: colors.white, 
     alignItems: "center",
     justifyContent: "center",
     elevation: 3,
@@ -140,16 +123,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
-
-  // Modal
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#00000070",
-  },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "#00000070" },
   menuCard: {
     position: "absolute",
     right: 20,
-    bottom: 220, // aparece encima del footer
+    bottom: 220,
     width: 280,
     backgroundColor: colors.white,
     borderRadius: 24,
@@ -161,16 +139,11 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 10 },
   },
-  
   menuItem: {
     paddingVertical: 14,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },
-  menuText: {
-    color: "#1B1B1B",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+  menuText: { color: "#1B1B1B", fontSize: 14, fontWeight: "700" },
 });

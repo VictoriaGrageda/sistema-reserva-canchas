@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { http } from "../api/http";
@@ -25,23 +26,48 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({} as any);
 export const useAuth = () => useContext(AuthContext);
 
+const TOKEN_KEY = "token"; // usa el mismo nombre que ya tenías
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Cargar token y user al iniciar la app (clave para fijar el stack correcto)
+  const setAuthHeader = (tk?: string) => {
+    if (tk) http.defaults.headers.common.Authorization = `Bearer ${tk}`;
+    else delete http.defaults.headers.common.Authorization;
+  };
+
+  const refreshUser = async () => {
+    try {
+      const res = await http.get<{ data: User }>("/usuarios/me");
+      setUser(res.data.data);
+    } catch (err: any) {
+      // Token inválido/expirado → limpiar TODO
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      setToken(null);
+      setAuthHeader(undefined);
+      setUser(null);
+      throw err;
+    }
+  };
+
+  // Arranque de la app
   useEffect(() => {
     (async () => {
       try {
-        const stored = await AsyncStorage.getItem("token");
-        if (stored) {
-          setToken(stored);
-          http.defaults.headers.common.Authorization = `Bearer ${stored}`;
-          await refreshUser(); // <- trae user con rol actualizado del backend
+        const stored = await AsyncStorage.getItem(TOKEN_KEY);
+        if (!stored) {
+          // 🔑 SIN token → aseguramos limpiar headers/usuario
+          setAuthHeader(undefined);
+          setUser(null);
+          return;
         }
+        setToken(stored);
+        setAuthHeader(stored);
+        await refreshUser(); // trae el rol real
       } finally {
-        setLoading(false); // <- SOLO después de intentar refreshUser
+        setLoading(false); // siempre desactivar el loader
       }
     })();
   }, []);
@@ -51,32 +77,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const tk = res.data?.data?.token as string | undefined;
     if (!tk) throw new Error("Token no recibido");
 
-    await AsyncStorage.setItem("token", tk);
+    await AsyncStorage.setItem(TOKEN_KEY, tk);
     setToken(tk);
-    http.defaults.headers.common.Authorization = `Bearer ${tk}`;
-
-    await refreshUser(); // <- importante para tener rol antes de navegar
+    setAuthHeader(tk);
+    await refreshUser(); // ya tendrás rol antes de que el navigator cambie
   };
 
   const logout = async () => {
-    setUser(null);
+    await AsyncStorage.removeItem(TOKEN_KEY);
     setToken(null);
-    await AsyncStorage.removeItem("token");
-    delete http.defaults.headers.common.Authorization;
-  };
-
-  const refreshUser = async () => {
-    const res = await http.get<{ data: User }>("/usuarios/me");
-    setUser(res.data.data);
+    setAuthHeader(undefined);
+    setUser(null);
   };
 
   const changeRole = async (rol: "cliente" | "administrador") => {
     await http.patch("/usuarios/me/role", { rol });
-    await refreshUser(); // <- re-lee user para tener el rol nuevo
+    await refreshUser();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser, changeRole }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, logout, refreshUser, changeRole }}
+    >
       {children}
     </AuthContext.Provider>
   );

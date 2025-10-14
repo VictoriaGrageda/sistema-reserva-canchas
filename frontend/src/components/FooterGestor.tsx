@@ -13,28 +13,39 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import colors from "../theme/colors";
-
+import { useAuth } from "../context/AuthContext";
 
 type Props = {
-  onLogout?: () => void;
+  onLogout?: () => void; // opcional
 };
 
+export default function Footer({ onLogout }: Props) {
+  const [open, setOpen] = useState(false);
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { logout } = useAuth();
 
-export default function Footer({onLogout}: Props) {
-    const [open, setOpen] = useState(false);
+  const goHome = () => {
+    setOpen(false);
+    navigation.replace("HomeGestor"); // inicio del admin
+  };
 
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-    const goHome = () => {
-        setOpen(false);
-        navigation.replace("HomeGestor");
-    };
+  const doLogout = async () => {
+    try {
+      await logout(); // limpia token y usuario en el contexto
+    } finally {
+      setOpen(false);
+      // Volver al stack público (Welcome/Login/Register)
+      navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
+      onLogout?.();
+    }
+  };
 
   return (
     <>
       <SafeAreaView style={styles.safe}>
         <View style={styles.footer}>
-          {/* Marca  */}
+          {/* Marca */}
           <Text style={styles.brand}>
             <Text style={styles.brandPart1}>F</Text>
             <Text style={styles.brandPart2}>ast</Text>
@@ -58,26 +69,24 @@ export default function Footer({onLogout}: Props) {
       </SafeAreaView>
 
       {/* Menú modal */}
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
         <View style={styles.menuCard}>
-       
-
           <Pressable
             style={[styles.menuItem, { backgroundColor: "#FAD4D8" }]}
-            // onPress={() => props.onGoHome?.()}
             onPress={goHome}
           >
             <Text style={styles.menuText}>INICIO</Text>
           </Pressable>
-          
 
           <Pressable
             style={[styles.menuItem, { backgroundColor: "#c8ddefff" }]}
-            onPress={() => {
-                setOpen(false);
-                onLogout?.();
-              }}  
+            onPress={doLogout}
           >
             <Text style={styles.menuText}>CERRAR SESIÓN</Text>
           </Pressable>
