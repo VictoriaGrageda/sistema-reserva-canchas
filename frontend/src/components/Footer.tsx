@@ -14,14 +14,9 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import colors from "../theme/colors";
 
-
 type Props = {
-  // onGoHistory={() => navigation.navigate("History")}
-  // onGoSettings={() => navigation.navigate("Settings")}
   onLogout?: () => void;
-
 };
-
 
 export default function Footer({onLogout}: Props) {
   const [open, setOpen] = useState(false);
@@ -73,16 +68,14 @@ export default function Footer({onLogout}: Props) {
 
           <Pressable
             style={[styles.menuItem, { backgroundColor: "#D6EDF1" }]}
-            // onPress={() => props.onGoHistory?.()}
-            onPress={() => {}}
+            onPress={() => navigation.navigate('HistorialReservas')}
           >
             <Text style={styles.menuText}>HISTORIAL DE RESERVAS</Text>
           </Pressable>
 
           <Pressable
             style={[styles.menuItem, { backgroundColor: "#E6F6E6" }]}
-            // onPress={() => props.onGoSettings?.()}
-            onPress={() => {}}
+            onPress={() => navigation.navigate('Configuraciones')}
           >
             <Text style={styles.menuText}>CONFIGURACIONES</Text>
           </Pressable>

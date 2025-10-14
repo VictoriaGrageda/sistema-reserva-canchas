@@ -6,10 +6,18 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import PostRegisterScreen from '../screens/PostRegisterScreen';   
 import HomeScreen from '../screens/HomeScreen';
+import ReservarCanchasScreen from '../screens/ReservarCanchasScreen';
+import ReservasRealizadasScreen from '../screens/ReservasRealizadasScreen';
+import ConfiguracionesScreen from '../screens/ConfiguracionesScreen';
+import HistorialReservasScreen from '../screens/HistorialReservasScreen'; 
+
+
 import HomeGestorScreen from '../screens_gestor/HomeGestorScreen';
 import RegistroCanchasScreen from '../screens_gestor/RegistroCanchasScreen';
 import CanchasRegistradasScreen from '../screens_gestor/CanchasResgistradasScreen';  
 import SolicitudesReservasScreen from '../screens_gestor/SolicitudesReservasScreen';
+
+
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -26,6 +34,10 @@ export default function AppNavigator() {
       <Stack.Screen name="RegistroCanchas" component={RegistroCanchasScreen}/>
       <Stack.Screen name="CanchasRegistradas" component={CanchasRegistradasScreen}/>
       <Stack.Screen name="SolicitudesReservas" component={SolicitudesReservasScreen}/>
+      <Stack.Screen name="ReservarCanchas" component={ReservarCanchasScreen}/>
+      <Stack.Screen name="ReservasRealizadas" component={ReservasRealizadasScreen}/>
+      <Stack.Screen name="Configuraciones" component={ConfiguracionesScreen}/>
+      <Stack.Screen name="HistorialReservas" component={HistorialReservasScreen}/>
 
 
 
