@@ -10,6 +10,10 @@ export type RootStackParamList = {
   RegistroCanchas: undefined;
   CanchasRegistradas: undefined;
   SolicitudesReservas: undefined;
+  Configuraciones: undefined;
+  HistorialReservas: undefined;
+  ReservarCanchas: undefined;
+  ReservasRealizadas: undefined;
 };
 
 export type NavProps<T extends keyof RootStackParamList> =

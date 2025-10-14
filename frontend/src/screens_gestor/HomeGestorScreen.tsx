@@ -3,7 +3,7 @@ import colors from '../theme/colors';
 import type { NavProps } from '../navigation/types';
 import Footer from "../components/FooterGestor";
 
-export default function HomeScreen({ navigation }: NavProps<'HomeGestor'>) {
+export default function HomeGestorScreen({ navigation }: NavProps<'HomeGestor'>) {
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.green} />

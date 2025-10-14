@@ -16,7 +16,7 @@ export default function HomeScreen({ navigation }: NavProps<'Home'>) {
           <TouchableOpacity
             style={[styles.action, styles.actionPrimary]}
             activeOpacity={0.85}
-            onPress={() => { /* navegar a reservar */ }}
+            onPress={() => navigation.navigate('ReservarCanchas')}
           >
             <Text style={styles.actionTitleLight}>Reservar Cancha</Text>
           </TouchableOpacity>
@@ -24,7 +24,7 @@ export default function HomeScreen({ navigation }: NavProps<'Home'>) {
           <TouchableOpacity
             style={[styles.action, styles.actionSecondary]}
             activeOpacity={0.85}
-            onPress={() => { /* navegar a mis reservas */ }}
+            onPress={() => navigation.navigate('ReservasRealizadas')}
           >
             <Text style={styles.actionTitleDark}>Mis reservas</Text>
           </TouchableOpacity>
@@ -53,9 +53,9 @@ const styles = StyleSheet.create({
   panel: {
     height: 390,
     width: 280,
-    maxWidth: 340,       // mejor en teléfonos grandes
+    maxWidth: 340,       
     minHeight: 300,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 20,
     padding: 24,
     gap: 80,
