@@ -1,4 +1,3 @@
-// src/screens_gestor/RegistroCanchas.tsx
 import React, { useMemo, useState } from "react";
 import {
   SafeAreaView,
@@ -57,7 +56,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
   const [ubicacion, setUbicacion] = useState<string | null>(null);
 
   // QR (imagen)
-  const [qrUri, setQrUri] = useState<string | null>(null); // ⬅️ NUEVO
+  const [qrUri, setQrUri] = useState<string | null>(null); // implementacion del qr para subir
 
   // Selects
   const precios = ["10 Bs", "20 Bs", "30 Bs", "40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
@@ -175,7 +174,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
       <Footer onLogout={() => navigation.replace('Welcome')} />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Chip morado */}
+        {/* TITULO  morado  */}
         <View style={styles.headerChip}>
           <Text style={styles.headerChipText}>REGISTRO DE CANCHA</Text>
         </View>
@@ -263,7 +262,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           </Labeled>
           
           {/* ====== subir QR  style====== */}
-          <Text style={styles.groupTitle}>Código QR del complejo</Text>
+          <Text style={styles.groupTitle}>Código QR para el cobro </Text>
           <View style={styles.qrCard}>
             {qrUri ? (
               <>
