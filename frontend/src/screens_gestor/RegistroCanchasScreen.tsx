@@ -12,8 +12,10 @@ import {
   Modal,
   Pressable,
   Alert,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker"; // imagen para subir (QR)
 import colors from "../theme/colors";
 import type { NavProps } from "../navigation/types";
 import Footer from "../components/FooterGestor";
@@ -53,6 +55,9 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
   const [subAlcaldia, setSubAlcaldia] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState<string | null>(null);
+
+  // QR (imagen)
+  const [qrUri, setQrUri] = useState<string | null>(null); // ⬅️ NUEVO
 
   // Selects
   const precios = ["10 Bs", "20 Bs", "30 Bs", "40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
@@ -116,11 +121,31 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
   };
 
   const onSelectUbicacion = () => {
+    // Aquí podrías abrir un mapa o selector real
     
   };
 
+  // subir QR desde galería
+  const pickQR = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permiso requerido", "Autoriza el acceso a tus fotos para subir el QR.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1], // cuadrado (QR)
+      quality: 0.9,
+    });
+    if (!result.canceled) {
+      setQrUri(result.assets[0].uri);
+    }
+  };
+
+  const removeQR = () => setQrUri(null); // parte de subir imagen qr al regustro de canchas
+
   const onSubmit = () => {
-    // solo validaciones mínimas de demo
     if (!otb || !subAlcaldia || !telefono) {
       Alert.alert("Registro", "Completa OTB, SubAlcaldía y Celular.");
       return;
@@ -134,6 +159,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
       subAlcaldia,
       telefono,
       ubicacion,
+      qrUri, // incluir QR
       precioDiurno,
       precioNocturno,
       tipoCampo,
@@ -147,8 +173,8 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
   return (
     <SafeAreaView style={styles.screen}>
       <Footer onLogout={() => navigation.replace('Welcome')} />
+
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        
         {/* Chip morado */}
         <View style={styles.headerChip}>
           <Text style={styles.headerChipText}>REGISTRO DE CANCHA</Text>
@@ -168,6 +194,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
             <Input placeholder="xxxxxxxx" keyboardType="phone-pad" value={telefono} onChangeText={setTelefono} />
           </Labeled>
 
+          
           {/* DÍAS + HORARIOS */}
           <Text style={styles.groupTitle}>Seleccione Días disponibles</Text>
           <View style={styles.daysRow}>
@@ -234,6 +261,34 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
               onPress={() => openSelect("Tipo de cancha", tiposCancha, setTipoCancha)}
             />
           </Labeled>
+          
+          {/* ====== subir QR  style====== */}
+          <Text style={styles.groupTitle}>Código QR del complejo</Text>
+          <View style={styles.qrCard}>
+            {qrUri ? (
+              <>
+                <Image source={{ uri: qrUri }} style={styles.qrPreview} />
+                <View style={styles.qrActions}>
+                  <TouchableOpacity style={[styles.qrBtn, { backgroundColor: "#E8F4FF" }]} onPress={pickQR}>
+                    <Ionicons name="image-outline" size={18} color={colors.dark} />
+                    <Text style={[styles.qrBtnText, { color: colors.dark }]}>Reemplazar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.qrBtn, { backgroundColor: "#FFEAEA" }]} onPress={removeQR}>
+                    <Ionicons name="trash-outline" size={18} color="#B00020" />
+                    <Text style={[styles.qrBtnText, { color: "#B00020" }]}>Quitar</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <TouchableOpacity style={styles.qrUpload} onPress={pickQR} activeOpacity={0.9}>
+                <Ionicons name="qr-code-outline" size={28} color={colors.dark} />
+                <Text style={styles.qrUploadText}>Subir un QR</Text>
+                <Text style={styles.qrHint}>PNG / JPG (cuadrado recomendado).{"\n"}ASEGURATE QUE EL QR NO VENZA PRONTO</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {/* ====== FIN de subir qr imagen ====== */}
+
 
           {/* Ubicación */}
           <TouchableOpacity style={styles.locationBtn} onPress={onSelectUbicacion} activeOpacity={0.85}>
@@ -498,6 +553,60 @@ const styles = StyleSheet.create({
 
   // Días
   groupTitle: { color: "#1B1B1B", fontWeight: "700", marginLeft: 2, marginBottom: 6 },
+
+  // ===== tarjeta de subida QR =====
+  qrCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#E9F2EB",
+    ...Platform.select({
+      android: { elevation: 2 },
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 3 },
+      },
+    }),
+  },
+  qrUpload: {
+    minHeight: 120,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E6F1E9",
+    backgroundColor: "#F9FCFA",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 16,
+  },
+  qrUploadText: { fontWeight: "800", color: colors.dark },
+  qrHint: { fontSize: 12, opacity: 0.65, color: colors.dark, textAlign: 'center', },
+  qrPreview: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E6F1E9",
+  },
+  qrActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  qrBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+  },
+  qrBtnText: { fontWeight: "800" },
+  // ===== FIN de foto subida de qr =====
+
   daysRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   dayChip: {
     backgroundColor: "#E6F1E9",
@@ -510,7 +619,7 @@ const styles = StyleSheet.create({
   dayChipTextActive: {},
 
   daySummary: { flexDirection: "row", gap: 8, alignItems: "center" },
-  daySummaryTitle: { fontWeight: "800", width: 48, color: colors.dark },
+  daySummaryTitle: { fontWeight: "800", width: 80, color: colors.dark },
   daySummaryText: { color: colors.dark },
 
   // Botón ubicación y submit
