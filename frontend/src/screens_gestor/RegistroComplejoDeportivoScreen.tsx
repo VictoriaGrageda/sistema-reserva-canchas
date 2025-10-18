@@ -193,15 +193,15 @@ export default function RegistroComplejoDeportivoScreen(
         <View style={styles.form}>
           {/* Campos básicos */}
           <Labeled label="OTB de la cancha">
-            <Input placeholder="ingrese otb" value={otb} onChangeText={setOtb} />
+            <Input placeholder="Ingrese nombre de otb" value={otb} onChangeText={setOtb} />
           </Labeled>
 
           <Labeled label="SubAlcaldía">
-            <Input placeholder="ingrese subalcaldía" value={subAlcaldia} onChangeText={setSubAlcaldia} />
+            <Input placeholder="Ingrese subalcaldía" value={subAlcaldia} onChangeText={setSubAlcaldia} />
           </Labeled>
 
           <Labeled label="Número de celular">
-            <Input placeholder="xxxxxxxx" keyboardType="phone-pad" value={telefono} onChangeText={setTelefono} />
+            <Input placeholder="XXXXXXXX" keyboardType="phone-pad" value={telefono} onChangeText={setTelefono} />
           </Labeled>
 
           <Labeled label="Nombre del complejo deportivo">
@@ -230,7 +230,7 @@ export default function RegistroComplejoDeportivoScreen(
           <Labeled label="Precio Diurno por hora">
             <Select
               value={precioDiurno}
-              placeholder="Seleccione"
+              placeholder="Seleccione precio diurno"
               onPress={() => openSelect("Precio diurno", PRECIOS, setPrecioDiurno)}
             />
           </Labeled>
@@ -238,7 +238,7 @@ export default function RegistroComplejoDeportivoScreen(
           <Labeled label="Precio Nocturno por hora">
             <Select
               value={precioNocturno}
-              placeholder="Seleccione"
+              placeholder="Seleccione precio nocturno"
               onPress={() => openSelect("Precio nocturno", PRECIOS, setPrecioNocturno)}
             />
           </Labeled>
@@ -450,7 +450,7 @@ function Select({
 
 /** ==================== Estilos ==================== */
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.yellow },
+  screen: { flex: 1, backgroundColor: colors.lightGreen },
   content: { padding: 20, gap: 12 },
 
   headerChip: {

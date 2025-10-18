@@ -232,7 +232,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           <Labeled label="Precio Diurno por hora">
             <Select
               value={precioDiurno}
-              placeholder="Seleccione"
+              placeholder="Seleccione precio diurno"
               onPress={() => openSelect("Precio diurno", precios, setPrecioDiurno)}
             />
           </Labeled>
@@ -240,7 +240,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           <Labeled label="Precio Nocturno por hora">
             <Select
               value={precioNocturno}
-              placeholder="Seleccione"
+              placeholder="Seleccione precio nocturno"
               onPress={() => openSelect("Precio nocturno", precios, setPrecioNocturno)}
             />
           </Labeled>
@@ -248,7 +248,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           <Labeled label="Tipo de campo deportivo">
             <Select
               value={tipoCampo}
-              placeholder="Seleccione"
+              placeholder="Seleccione tipo de campo de la cancha "
               onPress={() => openSelect("Tipo de campo", tiposCampo, setTipoCampo)}
             />
           </Labeled>
@@ -256,7 +256,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           <Labeled label="Tipo de cancha deportiva">
             <Select
               value={tipoCancha}
-              placeholder="Seleccione"
+              placeholder="Seleccione el tipo de cancha "
               onPress={() => openSelect("Tipo de cancha", tiposCancha, setTipoCancha)}
             />
           </Labeled>

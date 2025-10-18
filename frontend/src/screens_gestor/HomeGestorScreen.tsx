@@ -69,14 +69,12 @@ const styles = StyleSheet.create({
 
   // Panel blanco mejorado
   panel: {
-    height: 390,
-    width: 280,
-    maxWidth: 340,       // mejor en teléfonos grandes
-    minHeight: 300,
+    height: 400,
+    width: 300,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 24,
-    gap: 80,
+    gap:30 ,
     justifyContent: 'center',
 
     // Sombra cross-platform
@@ -94,7 +92,6 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 18,
     paddingVertical: 18,
-    
 
   
   },
