@@ -17,6 +17,7 @@ import type { NavProps } from "../navigation/types";
 const precios = ["10 Bs", "20 Bs", "30 Bs", "40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
 const tiposCampo = ["Fútbol 5", "Fútbol 6", "Fútbol 8", "Fútbol 11"];
 const tiposCancha = ["Césped sintetico", "Tierra Batida", "Césped natural"];
+const tiposReservas = ["Complejo deportivo", "Cancha Individual"];
 
 export default function ReservarCanchasScreen({ navigation }: NavProps<"ReservarCanchas">) {
   const [campo, setCampo] = useState<string | null>(null);
@@ -45,12 +46,21 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
       <Footer onLogout={() => navigation.replace("Welcome")} />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Filtros */}
+        {/* Filtros para escoger que reservar si complejos deportivo con n canchas o una sola cancha */}
         <View style={styles.filters}>
+
+          <Labeled label="¿Qué deseas buscar?">
+            <SelectField
+              value={campo}
+              placeholder="Seleccione tipo de reservar"
+              onPress={() => openSelect("Tipo de reservas", tiposReservas, setCampo)}
+            />
+          </Labeled>
+
           <Labeled label="Tipo de campo deportivo">
             <SelectField
               value={campo}
-              placeholder="Seleccione"
+              placeholder="Seleccione el tipo de campo/s deportivo/s"
               onPress={() => openSelect("Tipo de campo deportivo", tiposCampo, setCampo)}
             />
           </Labeled>
@@ -58,7 +68,7 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
           <Labeled label="Tipo de cancha deportiva">
             <SelectField
               value={cancha}
-              placeholder="Seleccione"
+              placeholder="Seleccione tipo de cancha/s deportivas"
               onPress={() => openSelect("Tipo de cancha deportiva", tiposCancha, setCancha)}
             />
           </Labeled>
