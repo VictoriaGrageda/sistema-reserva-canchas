@@ -23,6 +23,14 @@ export default function HomeGestorScreen({ navigation }: NavProps<'HomeGestor'>)
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[styles.action, styles.actionFourth]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('RegistroComplejoDeportivo')}
+          >
+            <Text style={styles.actionTitleLight}>Registrar Complejo Deportivo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.action, styles.actionSecondary]}
             activeOpacity={0.85}
             onPress={() => navigation.navigate('CanchasRegistradas')}
@@ -98,6 +106,9 @@ const styles = StyleSheet.create({
   },
   actionTerth: {
     backgroundColor: colors.accent,
+  },
+  actionFourth: {
+    backgroundColor: '#4a02f4ff',
   },
 
   // Tipografías

@@ -34,7 +34,7 @@ export default function PostRegisterScreen({ navigation }: Props) {
             </TouchableOpacity>
       </View>
 
-      {/* Bloque 2: flujo para ofrecer canchas (ajustaR ruta cuando se la tenga ) */}
+      {/* Bloque 2: ia a HomeGestor  */}
       <View style={[styles.row, { marginTop: 28 }]}>
         <Text style={styles.rowText}>
           ¿QUIERES OFRECER TUS{"\n"}CANCHAS O POLIDEPORTIVOS?

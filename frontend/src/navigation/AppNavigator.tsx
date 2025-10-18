@@ -16,6 +16,7 @@ import HomeGestorScreen from '../screens_gestor/HomeGestorScreen';
 import RegistroCanchasScreen from '../screens_gestor/RegistroCanchasScreen';
 import CanchasRegistradasScreen from '../screens_gestor/CanchasResgistradasScreen';  
 import SolicitudesReservasScreen from '../screens_gestor/SolicitudesReservasScreen';
+import RegistroComplejoDeportivoScreen from 'src/screens_gestor/RegistroComplejoDeportivoScreen';
 
 
 
@@ -38,6 +39,7 @@ export default function AppNavigator() {
       <Stack.Screen name="ReservasRealizadas" component={ReservasRealizadasScreen}/>
       <Stack.Screen name="Configuraciones" component={ConfiguracionesScreen}/>
       <Stack.Screen name="HistorialReservas" component={HistorialReservasScreen}/>
+      <Stack.Screen name="RegistroComplejoDeportivo" component={RegistroComplejoDeportivoScreen}/>
 
 
 

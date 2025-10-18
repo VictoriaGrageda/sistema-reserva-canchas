@@ -14,6 +14,7 @@ export type RootStackParamList = {
   HistorialReservas: undefined;
   ReservarCanchas: undefined;
   ReservasRealizadas: undefined;
+  RegistroComplejoDeportivo: undefined;
 };
 
 export type NavProps<T extends keyof RootStackParamList> =
