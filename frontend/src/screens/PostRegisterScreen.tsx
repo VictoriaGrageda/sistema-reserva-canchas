@@ -1,3 +1,4 @@
+// screens/PostRegisterScreen.tsx
 import React, { useState } from "react";
 import {
   SafeAreaView,
@@ -11,10 +12,10 @@ import {
 } from "react-native";
 import colors from "../theme/colors";
 import ball from "../../assets/images/ball.png";
-import { http } from "../api/http"; // para ping directo; puedes quitarlo luego
+import { http } from "../api/http"; // si quieres quitar el ping, quítalo
 import { useAuth } from "../context/AuthContext";
 
-export default function PostRegisterScreen({ navigation }: any) {
+export default function PostRegisterScreen() {
   const { changeRole } = useAuth();
   const [loading, setLoading] = useState<"none" | "cliente" | "administrador">("none");
 
@@ -22,26 +23,26 @@ export default function PostRegisterScreen({ navigation }: any) {
     try {
       setLoading(rol);
 
-      // --- Depuración: verifica conectividad directa (quítalo si ya te funciona)
-      await http.get("/usuarios/ping");
+      // opcional: ver conectividad; elimina si molesta
+      try { await http.get("/usuarios/ping"); } catch {}
 
-      await changeRole(rol); // PATCH + refresh
-      navigation.replace(rol === "administrador" ? "HomeGestor" : "Home");
+      // 👇 MUY IMPORTANTE: NO navegas. Solo cambias el rol.
+      await changeRole(rol);
+
+      // ¡Listo! AppNavigator re-renderiza por el cambio en user.rol
+      // y monta el stack correcto (Home / HomeGestor).
     } catch (err: any) {
       Alert.alert(
         "Error",
-        err?.response?.data?.message ??
-          err?.message ??
-          "No se pudo actualizar el rol."
+        err?.response?.data?.message ?? err?.message ?? "No se pudo actualizar el rol."
       );
-    } finally {
       setLoading("none");
     }
   };
 
   return (
     <SafeAreaView style={styles.screen}>
-      {/* IMPORTANTE: evita que el héroe capture toques */}
+      {/* héroe, no captura toques */}
       <View style={styles.hero} pointerEvents="none">
         <View style={styles.ballCircle}>
           <Image source={ball} style={styles.ball} resizeMode="contain" />
@@ -61,7 +62,6 @@ export default function PostRegisterScreen({ navigation }: any) {
             pressed || loading !== "none" ? { opacity: 0.7 } : null,
           ]}
           disabled={loading !== "none"}
-          onPressIn={() => console.log("pressIn cliente")}
           onPress={() => pickRole("cliente")}
         >
           {loading === "cliente" ? (
@@ -85,7 +85,6 @@ export default function PostRegisterScreen({ navigation }: any) {
             pressed || loading !== "none" ? { opacity: 0.7 } : null,
           ]}
           disabled={loading !== "none"}
-          onPressIn={() => console.log("pressIn admin")}
           onPress={() => pickRole("administrador")}
         >
           {loading === "administrador" ? (
@@ -107,14 +106,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 24,
   },
-
-  // Asegura que el héroe no tape nada
-  hero: {
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 28,
-    zIndex: 0, // debajo
-  },
+  hero: { alignItems: "center", marginTop: 8, marginBottom: 28, zIndex: 0 },
   ballCircle: {
     width: 300,
     height: 300,
@@ -122,12 +114,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.yellow,
     alignItems: "center",
     justifyContent: "center",
-    // evita stacking agresivo en Android
     elevation: 0,
   },
   ball: { width: 220, height: 220 },
-
-  // Botones por encima del héroe
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -142,7 +131,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginRight: 12,
   },
-
   cta: {
     width: 160,
     height: 48,

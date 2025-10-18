@@ -1,23 +1,31 @@
+// navigation/AppNavigator.tsx
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
 import { useAuth } from '../context/AuthContext';
 
+// Screens públicas
 import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+
+// Selección de rol
 import PostRegisterScreen from '../screens/PostRegisterScreen';
 
+// Cliente
 import HomeScreen from '../screens/HomeScreen';
+
+// Administrador (gestor)
 import HomeGestorScreen from '../screens_gestor/HomeGestorScreen';
 import RegistroCanchasScreen from '../screens_gestor/RegistroCanchasScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { loading, user } = useAuth();
+  const { loading, user, needsRoleChoice } = useAuth(); // ⬅️ usamos el flag
 
+  // Loader global
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -26,43 +34,44 @@ export default function AppNavigator() {
     );
   }
 
-  // Sin sesión
+  // 1) Sin sesión → stack público
   if (!user) {
     return (
-      <Stack.Navigator
-        key="public"                             // 👈 fuerza remount del stack público
-        screenOptions={{ headerShown: false }}
-      >
+      <Stack.Navigator key="public" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
+        {/* PostRegister NO va en el stack público */}
+      </Stack.Navigator>
+    );
+  }
+
+  // 2) Debe elegir rol → SOLO PostRegister
+  //    (prioriza el flag de UI y también soporta rol 'pendiente' del backend)
+  if (needsRoleChoice || user.rol === 'pendiente') {
+    return (
+      <Stack.Navigator key="postreg" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="PostRegister" component={PostRegisterScreen} />
       </Stack.Navigator>
     );
   }
 
-  // Con sesión: por rol
+  // 3) Rol administrador (gestor)
   if (user.rol === 'administrador') {
     return (
-      <Stack.Navigator
-        key="admin"                              // 👈 fuerza remount cuando entra/sale admin
-        screenOptions={{ headerShown: false }}
-      >
+      <Stack.Navigator key="admin" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="HomeGestor" component={HomeGestorScreen} />
         <Stack.Screen name="RegistroCanchas" component={RegistroCanchasScreen} />
-        <Stack.Screen name="PostRegister" component={PostRegisterScreen} />
+        {/* No incluir PostRegister aquí */}
       </Stack.Navigator>
     );
   }
 
-  // Cliente
+  // 4) Rol cliente
   return (
-    <Stack.Navigator
-      key="client"                                // 👈 fuerza remount para cliente
-      screenOptions={{ headerShown: false }}
-    >
+    <Stack.Navigator key="client" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="PostRegister" component={PostRegisterScreen} />
+      {/* No incluir PostRegister aquí */}
     </Stack.Navigator>
   );
 }

@@ -8,7 +8,7 @@ export default function HomeScreen({ navigation }: NavProps<'HomeGestor'>) {
     <View style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.green} />
       
-      <Footer onLogout={() => navigation.replace('Welcome')} />
+      <Footer />
 
       {/* Contenido centrado debajo del header */}
       <View style={styles.content}>

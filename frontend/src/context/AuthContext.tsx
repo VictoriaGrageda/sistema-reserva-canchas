@@ -8,7 +8,7 @@ export type User = {
   nombre: string;
   apellidos: string;
   correo: string;
-  rol: "cliente" | "administrador";
+  rol: "cliente" | "administrador" | "pendiente";
   telefono?: string | null;
   foto_perfil?: string | null;
 };
@@ -17,10 +17,17 @@ type AuthContextType = {
   user: User | null;
   token: string | null;
   loading: boolean;
+
+  // flujo auth
   login: (correo: string, contrasena: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   changeRole: (rol: "cliente" | "administrador") => Promise<void>;
+
+  // ⬇️ NUEVO: fuerza mostrar PostRegister tras registro
+  needsRoleChoice: boolean;
+  markNeedsRoleChoice: () => void;
+  clearRoleChoice: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>({} as any);
@@ -32,6 +39,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // ⬇️ NUEVO: flag de UI para mostrar PostRegister aunque el backend ponga rol=cliente
+  const [needsRoleChoice, setNeedsRoleChoice] = useState(false);
 
   const setAuthHeader = (tk?: string) => {
     if (tk) http.defaults.headers.common.Authorization = `Bearer ${tk}`;
@@ -88,16 +98,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     setAuthHeader(undefined);
     setUser(null);
+    setNeedsRoleChoice(false);
   };
+
+  // ⬇️ NUEVO: API para controlar PostRegister desde UI
+  const markNeedsRoleChoice = () => setNeedsRoleChoice(true);
+  const clearRoleChoice = () => setNeedsRoleChoice(false);
 
   const changeRole = async (rol: "cliente" | "administrador") => {
     await http.patch("/usuarios/me/role", { rol });
-    await refreshUser();
+    // re-render inmediato para que AppNavigator cambie de stack sin esperar /me
+    setUser((prev) => (prev ? { ...prev, rol } : prev));
+    setNeedsRoleChoice(false); // salir de PostRegister tras elegir
+    // (opcional) sincroniza con backend
+    try { await refreshUser(); } catch {}
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, logout, refreshUser, changeRole }}
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        refreshUser,
+        changeRole,
+        // nuevo
+        needsRoleChoice,
+        markNeedsRoleChoice,
+        clearRoleChoice,
+      }}
     >
       {children}
     </AuthContext.Provider>

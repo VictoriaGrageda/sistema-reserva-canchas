@@ -8,7 +8,6 @@ import {
   Modal,
   SafeAreaView,
   Platform,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -17,27 +16,28 @@ import type { RootStackParamList } from "../navigation/types";
 import colors from "../theme/colors";
 
 type Props = {
-  onLogout?: () => void; // opcional; ya no es necesario, pero lo dejo por compatibilidad
+  onLogout?: () => void; // opcional; lo dejamos por compatibilidad
 };
 
 export default function Footer({ onLogout }: Props) {
   const [open, setOpen] = useState(false);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const goHome = () => {
     setOpen(false);
-    navigation.replace("Home");
+    const target = user?.rol === "administrador" ? "HomeGestor" : "Home";
+    navigation.replace(target as any); // 
   };
 
   const doLogout = async () => {
     try {
-      await logout();
+      await logout(); // limpia token/usuario; AppNavigator cambia al stack público
     } finally {
       setOpen(false);
-      navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
       onLogout?.();
+      // 
     }
   };
 
@@ -45,7 +45,7 @@ export default function Footer({ onLogout }: Props) {
     <>
       <SafeAreaView style={styles.safe}>
         <View style={styles.footer}>
-          {/* LOGO/TEXTO: sin className, solo style */}
+          {/* LOGO/TEXTO */}
           <Text style={styles.brand}>
             <Text style={styles.brandPart1}>F</Text>
             <Text style={styles.brandPart2}>ast</Text>
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.white, 
+    backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
     elevation: 3,

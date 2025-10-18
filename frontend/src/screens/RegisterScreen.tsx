@@ -1,3 +1,4 @@
+// screens/RegisterScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -15,15 +16,13 @@ import FormInput from "../components/FormInput";
 import PrimaryButton from "../components/PrimaryButton";
 import { AuthAPI } from "../api/auth";
 import { parseApiError, humanMessageFor } from "../utils/httpErrors";
-import { useAuth } from "../context/AuthContext"; // ⬅️ NUEVO
+import { useAuth } from "../context/AuthContext";
 
 type Props = NativeStackScreenProps<any, "Register">;
-
 type FE = Record<string, string[]>;
 
-
 export default function RegisterScreen({ navigation }: Props) {
-  const { login } = useAuth(); // ⬅️ NUEVO
+  const { login, markNeedsRoleChoice } = useAuth(); // ⬅️ añadimos markNeedsRoleChoice
 
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -34,9 +33,7 @@ export default function RegisterScreen({ navigation }: Props) {
   const [pass2, setPass2] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // errores por campo
   const [errors, setErrors] = useState<FE>({});
-
   const first = (arr?: string[]) => (Array.isArray(arr) && arr.length ? arr[0] : null);
 
   const onRegister = async () => {
@@ -68,21 +65,22 @@ export default function RegisterScreen({ navigation }: Props) {
 
     try {
       setLoading(true);
-      // 1) Registrar
+
+      // 1️⃣ Registrar usuario
       await AuthAPI.register(payload);
 
-      // 2) Login inmediato (guarda token y carga /usuarios/me en el contexto)
+      // 2️⃣ Login inmediato (guarda token y usuario)
       await login(correo.trim(), pass);
 
-      // 3) Ir a selección de rol (sin perder historial)
-      navigation.reset({ index: 0, routes: [{ name: "PostRegister" }] });
+      // 3️⃣ Forzar pantalla PostRegister sin navegar manualmente
+      markNeedsRoleChoice(); // 👈 AppNavigator mostrará PostRegister automáticamente
+
     } catch (e: any) {
       const { status, message, fieldErrors } = parseApiError(e);
+      if (fieldErrors) setErrors(fieldErrors);
 
-      if (fieldErrors) 
-        setErrors(fieldErrors); // pínchalos en el formulario
-
-      const friendly = humanMessageFor(status, "register") || message || "No se pudo registrar.";
+      const friendly =
+        humanMessageFor(status, "register") || message || "No se pudo registrar.";
       Alert.alert("Registro", friendly);
     } finally {
       setLoading(false);
@@ -98,9 +96,7 @@ export default function RegisterScreen({ navigation }: Props) {
         <View style={{ flex: 1, padding: 24, justifyContent: "center", gap: 12 }}>
           <Image source={require("../../assets/images/ball.png")} style={styles.ball} />
 
-          <Text style={{ fontSize: 22, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
-            Crear cuenta
-          </Text>
+          <Text style={styles.title}>Crear cuenta</Text>
 
           <View style={styles.card}>
             <FormInput
@@ -159,14 +155,17 @@ export default function RegisterScreen({ navigation }: Props) {
             />
           </View>
 
-          <Text style={{ textAlign: "center", marginTop: 12 }}>
+          <Text style={styles.bottomText}>
             ¿Ya tienes cuenta?{" "}
-            <Text style={{ color: colors.red, fontWeight: "700" }} onPress={() => navigation.replace("Login")}>
+            <Text
+              style={{ color: colors.red, fontWeight: "700" }}
+              onPress={() => navigation.replace("Login")}
+            >
               Inicia sesión
             </Text>
           </Text>
 
-          <Text style={{ textAlign: "center", marginTop: 18, opacity: 0.6 }}>
+          <Text style={styles.apiText}>
             API: {process.env.EXPO_PUBLIC_API_URL || "(no definida)"}
           </Text>
         </View>
@@ -176,7 +175,7 @@ export default function RegisterScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, alignItems: "center" },
+  title: { fontSize: 22, fontWeight: "600", textAlign: "center", marginBottom: 8 },
   ball: { width: 180, height: 180, marginVertical: 18, resizeMode: "contain", alignSelf: "center" },
   card: {
     width: "100%",
@@ -188,4 +187,6 @@ const styles = StyleSheet.create({
     borderColor: colors.lightGreen,
     borderWidth: 2,
   },
+  bottomText: { textAlign: "center", marginTop: 12 },
+  apiText: { textAlign: "center", marginTop: 18, opacity: 0.6 },
 });
