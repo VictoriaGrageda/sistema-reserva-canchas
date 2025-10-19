@@ -1,9 +1,55 @@
+// src/repositories/complejos.repo.ts
 import { PrismaClient } from '../generated/prisma';
 const prisma = new PrismaClient();
 
-export const ComplejosRepo = {
-  create: (data: any) => prisma.complejos.create({ data }),
-  listByAdmin: (admin_id: string) =>
-    prisma.complejos.findMany({ where: { admin_id }, orderBy: { nombre: 'asc' } }),
-  get: (id: string) => prisma.complejos.findUnique({ where: { id } }),
+type Filtros = {
+  ciudad?: string;
+  nombre?: string;
 };
+
+export const ComplejosRepo = {
+  // Crear complejo con canchas incluidas
+  createIncludeCanchas: (data: any) =>
+    prisma.complejos.create({
+      data,
+      include: { canchas: true },
+    }),
+
+  // Listar complejos filtrados por ciudad y nombre
+  list: ({ ciudad, nombre }: Filtros) =>
+    prisma.complejos.findMany({
+      where: {
+        AND: [
+          ciudad ? { ciudad: { contains: ciudad, mode: 'insensitive' } } : {},
+          nombre ? { nombre: { contains: nombre, mode: 'insensitive' } } : {},
+        ],
+      },
+      include: { canchas: true },
+      orderBy: { created_at: 'desc' },
+    }),
+
+  // Listar complejos por administrador
+  listByAdmin: (admin_id: string) =>
+    prisma.complejos.findMany({
+      where: { admin_id },
+      include: { canchas: true },
+      orderBy: { nombre: 'desc' },
+    }),
+
+  // Obtener un complejo por su id
+  getIncludeCanchas: (id: string) =>
+    prisma.complejos.findUnique({
+      where: { id },
+      include: { canchas: true },
+    }),
+
+
+   update: (id: string, data: any) =>
+    prisma.complejos.update({
+      where: { id },
+      data,
+      include: { canchas: true }, // para que el front reciba todo
+    }),
+};
+
+
