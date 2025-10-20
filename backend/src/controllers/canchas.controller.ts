@@ -55,4 +55,44 @@ export const CanchasController = {
       return res.status(400).json({ message: e.message ?? 'Error al actualizar cancha' });
     }
   },
+   //GET /api/v1/canchas/mias
+  async misCanchas(req: Request, res: Response) {
+    try {
+      const adminId =
+        (req as any).user?.sub || (req as any).user?.id || (req.query.adminId as string);
+      if (!adminId) throw new Error('adminId no encontrado (token o query ?adminId=)');
+      const data = await CanchasService.misCanchas(adminId);
+      return res.json(
+        data.map((c: any) => ({
+          id: c.id,
+          nombre: c.nombre,
+          tipoCancha: c.tipoCancha, // <- tal cual tu schema
+          complejo: c.complejo,
+        }))
+      );
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+  },
+
+  // GET /api/v1/canchas/:id/detalle
+  async detalle(req: Request, res: Response) {
+    try {
+      const cancha: any = await CanchasService.detalle(req.params.id);
+      if (!cancha) return res.status(404).json({ message: 'Cancha no encontrada' });
+
+      return res.json({
+        id: cancha.id,
+        nombre: cancha.nombre,
+        tipoCancha: cancha.tipoCancha,
+        complejo: cancha.complejo ? { id: cancha.complejo.id, nombre: cancha.complejo.nombre } : null,
+        precios: {
+          diurno: cancha.precioDiurnoPorHora ?? cancha.complejo?.precioDiurnoPorHora ?? null,
+          nocturno: cancha.precioNocturnoPorHora ?? cancha.complejo?.precioNocturnoPorHora ?? null,
+        },
+      });
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+  },
 };

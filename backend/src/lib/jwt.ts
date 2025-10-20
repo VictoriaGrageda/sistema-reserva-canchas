@@ -13,7 +13,7 @@ const EXPIRES_IN: jwt.SignOptions["expiresIn"] =
 export type JwtPayload = {
   id: string;
   correo: string;
-  rol: "cliente" | "administrador";
+  rol: "cliente" | "administrador" | 'pendiente';
 };
 
 // Firma el token que se devolverá en el login
