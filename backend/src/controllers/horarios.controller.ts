@@ -21,4 +21,21 @@ export const HorariosController = {
     const data = await HorariosService.eliminar(req.params.id);
     res.json(data);
   },
-};
+  async crearBulk(req: Request, res: Response) {
+    try {
+      const created = await HorariosService.crearBulk(req.body);
+      return res.status(201).json({ created });
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+},
+  async editar(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const updated = await HorariosService.editar(id, req.body);
+      return res.json(updated);
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+  },
+}
