@@ -16,10 +16,10 @@ import type { RootStackParamList } from "../navigation/types";
 import colors from "../theme/colors";
 
 type Props = {
-  onLogout?: () => void; // opcional; lo dejamos por compatibilidad
+  onLogout?: () => void;
 };
 
-export default function Footer({ onLogout }: Props) {
+export default function Footer({onLogout}: Props) {
   const [open, setOpen] = useState(false);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -74,11 +74,17 @@ export default function Footer({ onLogout }: Props) {
             <Text style={styles.menuText}>INICIO</Text>
           </Pressable>
 
-          <Pressable style={[styles.menuItem, { backgroundColor: "#D6EDF1" }]} onPress={() => {}}>
+          <Pressable
+            style={[styles.menuItem, { backgroundColor: "#D6EDF1" }]}
+            onPress={() => navigation.navigate('HistorialReservas')}
+          >
             <Text style={styles.menuText}>HISTORIAL DE RESERVAS</Text>
           </Pressable>
 
-          <Pressable style={[styles.menuItem, { backgroundColor: "#E6F6E6" }]} onPress={() => {}}>
+          <Pressable
+            style={[styles.menuItem, { backgroundColor: "#E6F6E6" }]}
+            onPress={() => navigation.navigate('Configuraciones')}
+          >
             <Text style={styles.menuText}>CONFIGURACIONES</Text>
           </Pressable>
 
