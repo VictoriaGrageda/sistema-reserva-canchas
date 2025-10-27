@@ -1,0 +1,406 @@
+###############################################
+# SISTEMA DE RESERVAS - REQUESTS DE PRUEBA
+# Copia cada bloque en Postman/Insomnia
+###############################################
+
+### Variables (reemplaza con tus valores reales)
+# @base_url = http://localhost:3000/api/v1
+# @token = (se obtiene del login)
+# @cancha_id = (UUID de una cancha existente)
+# @horario_id = (UUID de un horario existente)
+
+
+###############################################
+# 0. HEALTHCHECK
+###############################################
+
+### Verificar que el servidor funcione
+GET http://localhost:3000/health
+
+
+### Verificar módulos disponibles
+GET http://localhost:3000/api/v1
+
+
+###############################################
+# 1. AUTENTICACIÓN
+###############################################
+
+### 1.1 Registrar un nuevo usuario (cliente)
+POST http://localhost:3000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "Juan",
+  "apellidos": "Pérez López",
+  "ci": "1234567",
+  "correo": "juan.perez@test.com",
+  "contrasena": "password123",
+  "confirmarContrasena": "password123",
+  "telefono": "70123456"
+}
+
+
+### 1.2 Login como cliente
+POST http://localhost:3000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "correo": "juan.perez@test.com",
+  "contrasena": "password123"
+}
+
+# IMPORTANTE: Copia el "token" de la respuesta
+
+
+### 1.3 Registrar un administrador
+POST http://localhost:3000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "Admin",
+  "apellidos": "González",
+  "ci": "7654321",
+  "correo": "admin@test.com",
+  "contrasena": "admin123",
+  "confirmarContrasena": "admin123",
+  "telefono": "70654321"
+}
+
+
+### 1.4 Login como admin
+POST http://localhost:3000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@test.com",
+  "contrasena": "admin123"
+}
+
+# IMPORTANTE: Copia el "token" de la respuesta
+
+
+### 1.5 Cambiar rol a administrador (usar token del usuario registrado)
+PATCH http://localhost:3000/api/v1/usuarios/me/role
+Authorization: Bearer TU_TOKEN_AQUI
+Content-Type: application/json
+
+{
+  "rol": "administrador"
+}
+
+
+### 1.6 Verificar mi perfil (cliente)
+GET http://localhost:3000/api/v1/usuarios/me
+Authorization: Bearer TU_TOKEN_AQUI
+
+
+###############################################
+# 2. CREAR DATOS DE PRUEBA (Administrador)
+###############################################
+
+### 2.1 Crear un complejo deportivo (necesitas ser admin)
+POST http://localhost:3000/api/v1/complejos
+Authorization: Bearer TU_TOKEN_ADMIN
+Content-Type: application/json
+
+{
+  "nombre": "Complejo Deportivo Central",
+  "otb": "OTB Central",
+  "subalcaldia": "Max Paredes",
+  "celular": "70000000",
+  "telefono": "2222222",
+  "diasDisponibles": ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"],
+  "precioDiurnoPorHora": 50,
+  "precioNocturnoPorHora": 70,
+  "direccion": "Av. Buenos Aires #123",
+  "ciudad": "La Paz",
+  "observaciones": "Complejo con canchas sintéticas",
+  "admin_id": "TU_USER_ID_ADMIN"
+}
+
+# IMPORTANTE: Copia el "id" del complejo creado
+
+
+### 2.2 Listar complejos
+GET http://localhost:3000/api/v1/complejos
+
+
+### 2.3 Crear una cancha en el complejo
+POST http://localhost:3000/api/v1/canchas
+Authorization: Bearer TU_TOKEN_ADMIN
+Content-Type: application/json
+
+{
+  "complejo_id": "TU_COMPLEJO_ID",
+  "nombre": "Cancha 1",
+  "tipoCancha": "FUT5",
+  "precioDiurnoPorHora": 50,
+  "precioNocturnoPorHora": 70
+}
+
+# IMPORTANTE: Copia el "id" de la cancha creada
+
+
+### 2.4 Crear horarios para la cancha (bulk)
+POST http://localhost:3000/api/v1/horarios/bulk
+Authorization: Bearer TU_TOKEN_ADMIN
+Content-Type: application/json
+
+{
+  "cancha_id": "TU_CANCHA_ID",
+  "slots": [
+    {
+      "fecha": "2024-10-25",
+      "hora_inicio": "08:00:00",
+      "hora_fin": "09:00:00",
+      "disponible": true
+    },
+    {
+      "fecha": "2024-10-25",
+      "hora_inicio": "09:00:00",
+      "hora_fin": "10:00:00",
+      "disponible": true
+    },
+    {
+      "fecha": "2024-10-25",
+      "hora_inicio": "10:00:00",
+      "hora_fin": "11:00:00",
+      "disponible": true
+    },
+    {
+      "fecha": "2024-10-25",
+      "hora_inicio": "18:00:00",
+      "hora_fin": "19:00:00",
+      "disponible": true
+    },
+    {
+      "fecha": "2024-10-25",
+      "hora_inicio": "19:00:00",
+      "hora_fin": "20:00:00",
+      "disponible": true
+    }
+  ]
+}
+
+# IMPORTANTE: Esto crea 5 horarios de prueba
+
+
+###############################################
+# 3. CONSULTAR DISPONIBILIDAD
+###############################################
+
+### 3.1 Ver disponibilidad de una cancha en una fecha
+GET http://localhost:3000/api/v1/canchas/disponibilidad/TU_CANCHA_ID/2024-10-25
+
+# IMPORTANTE: Copia los "id" de los horarios disponibles
+
+
+### 3.2 Listar horarios de una cancha
+GET http://localhost:3000/api/v1/horarios/cancha/TU_CANCHA_ID/2024-10-25
+
+
+###############################################
+# 4. CREAR RESERVA (Cliente)
+###############################################
+
+### 4.1 Crear una reserva con 2 horarios
+POST http://localhost:3000/api/v1/reservas
+Authorization: Bearer TU_TOKEN_CLIENTE
+Content-Type: application/json
+
+{
+  "horarios": [
+    {
+      "horario_id": "HORARIO_ID_1",
+      "precio": 50
+    },
+    {
+      "horario_id": "HORARIO_ID_2",
+      "precio": 50
+    }
+  ]
+}
+
+# Respuesta exitosa: 201 Created
+# IMPORTANTE: Copia el "id" de la reserva creada
+
+
+### 4.2 Crear reserva con horario nocturno
+POST http://localhost:3000/api/v1/reservas
+Authorization: Bearer TU_TOKEN_CLIENTE
+Content-Type: application/json
+
+{
+  "horarios": [
+    {
+      "horario_id": "HORARIO_NOCTURNO_ID",
+      "precio": 70
+    }
+  ]
+}
+
+
+###############################################
+# 5. VER MIS RESERVAS (Cliente)
+###############################################
+
+### 5.1 Ver todas mis reservas
+GET http://localhost:3000/api/v1/reservas/mis-reservas
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+
+### 5.2 Filtrar reservas pendientes
+GET http://localhost:3000/api/v1/reservas/mis-reservas?estado=pendiente
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+
+### 5.3 Filtrar reservas confirmadas
+GET http://localhost:3000/api/v1/reservas/mis-reservas?estado=confirmada
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+
+### 5.4 Ver reservas con paginación
+GET http://localhost:3000/api/v1/reservas/mis-reservas?limit=10&offset=0
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+
+### 5.5 Ver detalle de una reserva específica
+GET http://localhost:3000/api/v1/reservas/TU_RESERVA_ID
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+
+###############################################
+# 6. MODIFICAR RESERVA (Cliente)
+###############################################
+
+### 6.1 Cambiar horarios de una reserva
+PATCH http://localhost:3000/api/v1/reservas/TU_RESERVA_ID
+Authorization: Bearer TU_TOKEN_CLIENTE
+Content-Type: application/json
+
+{
+  "horarios": [
+    {
+      "horario_id": "NUEVO_HORARIO_ID",
+      "precio": 60
+    }
+  ]
+}
+
+# Solo funciona si estado = "pendiente"
+
+
+###############################################
+# 7. CANCELAR RESERVA (Cliente)
+###############################################
+
+### 7.1 Cancelar una reserva
+DELETE http://localhost:3000/api/v1/reservas/TU_RESERVA_ID
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+# Esto libera los horarios automáticamente
+
+
+###############################################
+# 8. PANEL DE ADMINISTRADOR
+###############################################
+
+### 8.1 Ver todas las reservas de mis complejos
+GET http://localhost:3000/api/v1/reservas/admin/panel
+Authorization: Bearer TU_TOKEN_ADMIN
+
+
+### 8.2 Filtrar por estado
+GET http://localhost:3000/api/v1/reservas/admin/panel?estado=pendiente
+Authorization: Bearer TU_TOKEN_ADMIN
+
+
+### 8.3 Filtrar por complejo
+GET http://localhost:3000/api/v1/reservas/admin/panel?complejo_id=TU_COMPLEJO_ID
+Authorization: Bearer TU_TOKEN_ADMIN
+
+
+### 8.4 Filtrar por fecha
+GET http://localhost:3000/api/v1/reservas/admin/panel?fecha=2024-10-25
+Authorization: Bearer TU_TOKEN_ADMIN
+
+
+### 8.5 Confirmar una reserva (admin)
+PATCH http://localhost:3000/api/v1/reservas/TU_RESERVA_ID/estado
+Authorization: Bearer TU_TOKEN_ADMIN
+Content-Type: application/json
+
+{
+  "estado": "confirmada"
+}
+
+
+### 8.6 Rechazar/Cancelar una reserva (admin)
+PATCH http://localhost:3000/api/v1/reservas/TU_RESERVA_ID/estado
+Authorization: Bearer TU_TOKEN_ADMIN
+Content-Type: application/json
+
+{
+  "estado": "cancelada"
+}
+
+
+###############################################
+# 9. CASOS DE ERROR (para probar validaciones)
+###############################################
+
+### 9.1 Intentar crear reserva sin token (debe dar 401)
+POST http://localhost:3000/api/v1/reservas
+Content-Type: application/json
+
+{
+  "horarios": [
+    {
+      "horario_id": "cualquier-id",
+      "precio": 50
+    }
+  ]
+}
+
+
+### 9.2 Intentar reservar horario que no existe (debe dar 400)
+POST http://localhost:3000/api/v1/reservas
+Authorization: Bearer TU_TOKEN_CLIENTE
+Content-Type: application/json
+
+{
+  "horarios": [
+    {
+      "horario_id": "00000000-0000-0000-0000-000000000000",
+      "precio": 50
+    }
+  ]
+}
+
+
+### 9.3 Intentar reservar el mismo horario dos veces (debe dar 400)
+# Primero crea una reserva, luego intenta crear otra con el mismo horario
+
+
+### 9.4 Intentar modificar reserva de otro usuario (debe dar 403)
+# Usuario A crea reserva, Usuario B intenta modificarla
+
+
+### 9.5 Intentar modificar reserva confirmada (debe dar 400)
+# Primero el admin confirma la reserva
+# Luego el cliente intenta modificarla
+
+
+###############################################
+# 10. LIMPIAR DATOS DE PRUEBA
+###############################################
+
+### 10.1 Cancelar todas las reservas de prueba
+# Usar DELETE /api/v1/reservas/:id para cada reserva
+
+### 10.2 Eliminar horarios
+# DELETE http://localhost:3000/api/v1/horarios/:id
+
+### 10.3 Eliminar cancha
+# DELETE http://localhost:3000/api/v1/canchas/:id
