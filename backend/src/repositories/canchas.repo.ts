@@ -20,38 +20,53 @@ export const CanchasRepo = {
 
   // ✅ MIS CANCHAS (admin actual → complejos.admin_id)
   listMine: (adminId: string) =>
-    prisma.canchas.findMany({
-      where: { activo: true, complejo: { admin_id: adminId } }, // <- admin_id según tu schema
-      select: {
-        id: true,
-        nombre: true,
-        tipoCancha: true,   // <- existe en tu schema
-        // superficie no existe en tu schema; si luego lo agregas, ponlo aquí
-        complejo: { select: { id: true, nombre: true } },
-      },
-      orderBy: { nombre: 'asc' },
-    }),
+  prisma.canchas.findMany({
+    where: {
+      activo: true,
+      OR: [
+        { admin_id: adminId },               // canchas individuales del admin
+        { complejo: { admin_id: adminId } }, // canchas de sus complejos
+      ],
+    },
+    select: {
+      id: true,
+      nombre: true,
+      tipoCancha: true,
+      tipoCampo: true,  // 👈 este nombre ya coincide con schema
+      complejo: { select: { id: true, nombre: true } },
+    },
+    orderBy: { nombre: 'asc' },
+  }),
 
   // ✅ DETALLE DE CANCHA (incluye precios de cancha y del complejo)
-  findDetalle: (id: string) =>
-    prisma.canchas.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        nombre: true,
-        tipoCancha: true,
-        precioDiurnoPorHora: true,
-        precioNocturnoPorHora: true,
-        complejo: {
-          select: {
-            id: true,
-            nombre: true,
-            precioDiurnoPorHora: true,
-            precioNocturnoPorHora: true,
+  // ✅ DETALLE DE CANCHA (incluye admin y admin del complejo)
+findDetalle: (id: string) =>
+  prisma.canchas.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      nombre: true,
+      tipoCancha: true,
+      tipoCampo: true,
+      precioDiurnoPorHora: true,
+      precioNocturnoPorHora: true,
+      admin: { // dueño de canchas individuales
+        select: { id: true, nombre: true, correo: true },
+      },
+      complejo: {
+        select: {
+          id: true,
+          nombre: true,
+          precioDiurnoPorHora: true,
+          precioNocturnoPorHora: true,
+          admin: { // administrador del complejo
+            select: { id: true, nombre: true, correo: true },
           },
         },
       },
-    }),
+    },
+  }),
+
 
   // (ya lo tenías) precios con fallback
   async getPrecios(canchaId: string) {

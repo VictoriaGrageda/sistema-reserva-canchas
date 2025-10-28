@@ -21,13 +21,11 @@ export const ComplejosController = {
       let canchasCreate: any = undefined;
       if (Array.isArray(d.canchas) && d.canchas.length) {
         canchasCreate = {
-          create: d.canchas.map((c: any) => ({
-            nombre: c.nombre,
-            tipoCancha: c.tipoCancha, // 'FUT5' | 'FUT7' | ...
-            precioDiurnoPorHora:
-              c.precioDiurnoPorHora != null ? new Prisma.Decimal(c.precioDiurnoPorHora) : null,
-            precioNocturnoPorHora:
-              c.precioNocturnoPorHora != null ? new Prisma.Decimal(c.precioNocturnoPorHora) : null,
+          create: d.canchas.map((c: any, i: number) => ({
+            nombre: c.nombre ?? `Cancha ${i + 1}`,
+            tipoCancha: c.tipoCancha,    // FUT5|FUT6|FUT8|FUT11
+            tipoCampo:  c.tipoCampo,     // SINTETICO|TIERRA|CESPED
+            // Precios específicos de la cancha NO se envían aquí -> heredan del complejo
           })),
         };
       }

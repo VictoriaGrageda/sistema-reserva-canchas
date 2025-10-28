@@ -27,11 +27,16 @@ model usuarios {
   created_at  DateTime @default(now()) @db.Timestamp(6)
   updated_at  DateTime @updatedAt @db.Timestamp(6)
 
-  //relaciones
+  // relaciones
   notificaciones notificaciones[] @relation("UsuarioNotificaciones")
   qrs_admin      qrs[]            @relation("QRAdmin")
   reservas       reservas[]
-  complejos      complejos[]
+
+  // 🔹 OJO: MISMO NOMBRE DE RELACIÓN que en `model complejos`
+  complejos complejos[] @relation("UsuarioComplejosAdmin")
+
+  // 🔹 Canchas individuales del admin
+  canchas_individuales canchas[] @relation("UsuarioCanchasAdmin")
 
   @@map("usuarios")
 }
@@ -42,7 +47,7 @@ model complejos {
   otb                   String
   subalcaldia           String
   celular               String
-  telefono              String? // opcional
+  telefono              String?
   diasDisponibles       DiaSemana[]
   precioDiurnoPorHora   Decimal     @db.Decimal(10, 2)
   precioNocturnoPorHora Decimal     @db.Decimal(10, 2)
@@ -57,9 +62,9 @@ model complejos {
   created_at DateTime @default(now()) @db.Timestamp(6)
   updated_at DateTime @updatedAt @db.Timestamp(6)
 
-  // relación con administrador
+  // 🔹 MISMO NOMBRE DE RELACIÓN que en `model usuarios`
   admin_id String   @db.Uuid
-  admin    usuarios @relation(fields: [admin_id], references: [id], onDelete: Restrict)
+  admin    usuarios @relation("UsuarioComplejosAdmin", fields: [admin_id], references: [id], onDelete: Restrict)
 
   canchas canchas[]
 
@@ -71,25 +76,41 @@ model complejos {
 }
 
 model canchas {
-  id                    String     @id @default(uuid()) @db.Uuid
-  complejo_id           String     @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+
+  // Relación OPCIONAL con complejo
+  complejo_id String?    @db.Uuid
+  complejo    complejos? @relation(fields: [complejo_id], references: [id], onDelete: SetNull)
+
+  // Relación OPCIONAL directa al admin (cancha individual)
+  admin_id String?   @db.Uuid
+  admin    usuarios? @relation("UsuarioCanchasAdmin", fields: [admin_id], references: [id], onDelete: SetNull)
+
   nombre                String
+  tipoCampo             TipoCampo
   tipoCancha            TipoCancha
-  precioDiurnoPorHora   Decimal?   @db.Decimal(10, 2)
-  precioNocturnoPorHora Decimal?   @db.Decimal(10, 2)
+  otb                   String?
+  subalcaldia           String?
+  celular               String?
+  diasDisponibles       DiaSemana[]
+  observaciones         String?
+  qrUrl                 String?
+  direccion             String?
+  ciudad                String?
+  lat                   Decimal?    @db.Decimal(9, 6)
+  lng                   Decimal?    @db.Decimal(9, 6)
+  precioDiurnoPorHora   Decimal?    @db.Decimal(10, 2)
+  precioNocturnoPorHora Decimal?    @db.Decimal(10, 2)
+  activo                Boolean     @default(true)
+  created_at            DateTime    @default(now()) @db.Timestamp(6)
+  updated_at            DateTime    @updatedAt @db.Timestamp(6)
+  horarios              horarios[]
 
-  activo     Boolean  @default(true) // NUEVO: borrado lógico / deshabilitar
-  created_at DateTime @default(now()) @db.Timestamp(6)
-  updated_at DateTime @updatedAt @db.Timestamp(6)
-
-  // Relaciones
-  complejo complejos  @relation(fields: [complejo_id], references: [id], onDelete: Cascade) // CAMBIO: si se borra el complejo, caen sus canchas
-  horarios horarios[]
-
-  @@unique([complejo_id, nombre]) // NUEVO: nombre único dentro del mismo complejo
-  // Índices / restricciones
+  @@unique([complejo_id, nombre])
   @@index([complejo_id])
+  @@index([admin_id])
   @@index([tipoCancha])
+  @@index([ciudad])
   @@map("canchas")
 }
 
@@ -228,12 +249,15 @@ enum DiaSemana {
   DOMINGO
 }
 
+enum TipoCampo {
+  SINTETICO
+  TIERRA
+  CESPED
+}
+
 enum TipoCancha {
   FUT5
-  FUT7
+  FUT6
+  FUT8
   FUT11
-  SINTETICO
-  CESPED
-  PARQUET
-  TIERRA
 }

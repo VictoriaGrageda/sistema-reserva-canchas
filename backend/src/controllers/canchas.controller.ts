@@ -4,8 +4,27 @@ import { Prisma } from '../generated/prisma';
 
 export const CanchasController = {
   async crear(req: Request, res: Response) {
-    try { res.status(201).json(await CanchasService.crear(req.body)); }
-    catch (e:any) { res.status(400).json({ message: e.message }); }
+    try {
+      // ✅ obtenemos el admin desde el token o query (?adminId=)
+      const adminId =
+        (req as any).user?.sub || (req as any).user?.id || (req.query.adminId as string);
+
+      if (!adminId) {
+        return res.status(401).json({ message: 'adminId no encontrado (token o query ?adminId=)' });
+      }
+
+      // ✅ si no se envía complejo_id, la cancha es individual → se asigna admin_id
+      const data = {
+        ...req.body,
+        complejo_id: req.body.complejo_id ?? null,
+        admin_id: req.body.complejo_id ? null : adminId,
+      };
+
+      const cancha = await CanchasService.crear(data);
+      return res.status(201).json(cancha);
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
   },
   async listarPorComplejo(req: Request, res: Response) {
     res.json(await CanchasService.listarPorComplejo(req.params.complejo_id));
@@ -77,22 +96,49 @@ export const CanchasController = {
 
   // GET /api/v1/canchas/:id/detalle
   async detalle(req: Request, res: Response) {
-    try {
-      const cancha: any = await CanchasService.detalle(req.params.id);
-      if (!cancha) return res.status(404).json({ message: 'Cancha no encontrada' });
+  try {
+    const cancha: any = await CanchasService.detalle(req.params.id);
+    if (!cancha) return res.status(404).json({ message: 'Cancha no encontrada' });
 
-      return res.json({
-        id: cancha.id,
-        nombre: cancha.nombre,
-        tipoCancha: cancha.tipoCancha,
-        complejo: cancha.complejo ? { id: cancha.complejo.id, nombre: cancha.complejo.nombre } : null,
-        precios: {
-          diurno: cancha.precioDiurnoPorHora ?? cancha.complejo?.precioDiurnoPorHora ?? null,
-          nocturno: cancha.precioNocturnoPorHora ?? cancha.complejo?.precioNocturnoPorHora ?? null,
-        },
-      });
-    } catch (e: any) {
-      return res.status(400).json({ message: e.message });
-    }
-  },
+    return res.json({
+      id: cancha.id,
+      nombre: cancha.nombre,
+      tipoCancha: cancha.tipoCancha,
+      tipoCampo: cancha.tipoCampo,
+      complejo: cancha.complejo
+        ? {
+            id: cancha.complejo.id,
+            nombre: cancha.complejo.nombre,
+            admin: cancha.complejo.admin
+              ? {
+                  id: cancha.complejo.admin.id,
+                  nombre: cancha.complejo.admin.nombre,
+                  correo: cancha.complejo.admin.correo,
+                }
+              : null,
+          }
+        : null,
+      admin: cancha.admin
+        ? {
+            id: cancha.admin.id,
+            nombre: cancha.admin.nombre,
+            correo: cancha.admin.correo,
+          }
+        : null,
+      precios: {
+        diurno:
+          cancha.precioDiurnoPorHora ??
+          cancha.complejo?.precioDiurnoPorHora ??
+          null,
+        nocturno:
+          cancha.precioNocturnoPorHora ??
+          cancha.complejo?.precioNocturnoPorHora ??
+          null,
+      },
+    });
+  } catch (e: any) {
+    return res.status(400).json({ message: e.message });
+  }
+},
+
 };
