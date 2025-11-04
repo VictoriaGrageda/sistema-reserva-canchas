@@ -18,16 +18,19 @@ import HomeScreen from '../screens/HomeScreen';
 import ReservarCanchasScreen from '../screens/ReservarCanchasScreen';
 import ReservasRealizadasScreen from '../screens/ReservasRealizadasScreen';
 import ConfiguracionesScreen from '../screens/ConfiguracionesScreen';
-import HistorialReservasScreen from '../screens/HistorialReservasScreen'; 
+import HistorialReservasScreen from '../screens/HistorialReservasScreen';
+import ConfirmarReservaScreen from '../screens/ConfirmarReservaScreen';
+import DetalleReservaQRScreen from '../screens/DetalleReservaQRScreen'; 
 
 
 
 // Administrador (gestor)
 import HomeGestorScreen from '../screens_gestor/HomeGestorScreen';
 import RegistroCanchasScreen from '../screens_gestor/RegistroCanchasScreen';
-import CanchasRegistradasScreen from '../screens_gestor/CanchasResgistradasScreen';  
+import CanchasRegistradasScreen from '../screens_gestor/CanchasRegistradasScreen';
 import SolicitudesReservasScreen from '../screens_gestor/SolicitudesReservasScreen';
 import RegistroComplejoDeportivoScreen from 'src/screens_gestor/RegistroComplejoDeportivoScreen';
+import EditarCanchaScreen from '../screens_gestor/EditarCanchaScreen';
 
 
 
@@ -75,6 +78,7 @@ export default function AppNavigator() {
         <Stack.Screen name="HomeGestor" component={HomeGestorScreen} />
         <Stack.Screen name="RegistroCanchas" component={RegistroCanchasScreen} />
         <Stack.Screen name="CanchasRegistradas" component={CanchasRegistradasScreen} />
+        <Stack.Screen name="EditarCancha" component={EditarCanchaScreen} />
         <Stack.Screen name="SolicitudesReservas" component={SolicitudesReservasScreen} />
         <Stack.Screen name="RegistroComplejoDeportivo" component={RegistroComplejoDeportivoScreen} />
         {/* No incluir PostRegister aquí */}
@@ -86,14 +90,12 @@ export default function AppNavigator() {
   return (
     <Stack.Navigator key="client" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="HomeGestor" component={HomeGestorScreen}/>
-      <Stack.Screen name="RegistroCanchas" component={RegistroCanchasScreen}/>
-      <Stack.Screen name="ReservarCanchas" component={ReservarCanchasScreen}/>
-      <Stack.Screen name="ReservasRealizadas" component={ReservasRealizadasScreen}/>
-      <Stack.Screen name="Configuraciones" component={ConfiguracionesScreen}/>
-      <Stack.Screen name="HistorialReservas" component={HistorialReservasScreen}/>
-      
-      {/* No incluir PostRegister aquí */}
+      <Stack.Screen name="ReservarCanchas" component={ReservarCanchasScreen} />
+      <Stack.Screen name="ConfirmarReserva" component={ConfirmarReservaScreen} />
+      <Stack.Screen name="DetalleReservaQR" component={DetalleReservaQRScreen} />
+      <Stack.Screen name="ReservasRealizadas" component={ReservasRealizadasScreen} />
+      <Stack.Screen name="Configuraciones" component={ConfiguracionesScreen} />
+      <Stack.Screen name="HistorialReservas" component={HistorialReservasScreen} />
     </Stack.Navigator>
   );
 }

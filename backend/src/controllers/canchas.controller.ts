@@ -1,16 +1,16 @@
 import { Request, Response } from 'express';
 import { CanchasService } from '../services/canchas.service';
 import { Prisma } from '../generated/prisma';
+import type { AuthedRequest } from '../middlewares/auth.middleware';
 
 export const CanchasController = {
-  async crear(req: Request, res: Response) {
+  async crear(req: AuthedRequest, res: Response) {
     try {
-      // ✅ obtenemos el admin desde el token o query (?adminId=)
-      const adminId =
-        (req as any).user?.sub || (req as any).user?.id || (req.query.adminId as string);
+      // ✅ obtenemos el admin desde el token (req.user viene del middleware requireAuth)
+      const adminId = req.user?.id;
 
       if (!adminId) {
-        return res.status(401).json({ message: 'adminId no encontrado (token o query ?adminId=)' });
+        return res.status(401).json({ message: 'adminId no encontrado en el token' });
       }
 
       // ✅ si no se envía complejo_id, la cancha es individual → se asigna admin_id
@@ -28,6 +28,27 @@ export const CanchasController = {
   },
   async listarPorComplejo(req: Request, res: Response) {
     res.json(await CanchasService.listarPorComplejo(req.params.complejo_id));
+  },
+  async listarIndividuales(req: Request, res: Response) {
+    try {
+      const { ciudad, nombre } = req.query;
+      const filtros = {
+        ciudad: ciudad as string,
+        nombre: nombre as string,
+      };
+      const canchas = await CanchasService.listarIndividuales(filtros);
+
+      // Serializar Decimals a number
+      const canchasSerializadas = canchas.map((cancha: any) => ({
+        ...cancha,
+        precioDiurnoPorHora: cancha.precioDiurnoPorHora ? Number(cancha.precioDiurnoPorHora) : null,
+        precioNocturnoPorHora: cancha.precioNocturnoPorHora ? Number(cancha.precioNocturnoPorHora) : null,
+      }));
+
+      return res.json(canchasSerializadas);
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
   },
   async eliminar(req: Request, res: Response) {
     res.json(await CanchasService.eliminar(req.params.id));
@@ -75,11 +96,12 @@ export const CanchasController = {
     }
   },
    //GET /api/v1/canchas/mias
-  async misCanchas(req: Request, res: Response) {
+  async misCanchas(req: AuthedRequest, res: Response) {
     try {
-      const adminId =
-        (req as any).user?.sub || (req as any).user?.id || (req.query.adminId as string);
-      if (!adminId) throw new Error('adminId no encontrado (token o query ?adminId=)');
+      const adminId = req.user?.id;
+      if (!adminId) {
+        return res.status(401).json({ message: 'adminId no encontrado en el token' });
+      }
       const data = await CanchasService.misCanchas(adminId);
       return res.json(
         data.map((c: any) => ({

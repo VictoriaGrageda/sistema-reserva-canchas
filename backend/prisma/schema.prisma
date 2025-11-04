@@ -167,13 +167,14 @@ model reserva_items {
 }
 
 model pagos {
-  id         String     @id @default(uuid()) @db.Uuid
-  reserva_id String     @db.Uuid
-  qr_id      String?    @db.Uuid
-  estado     EstadoPago @default(pendiente)
-  fecha_pago DateTime?  @db.Timestamp(6)
-  created_at DateTime   @default(now()) @db.Timestamp(6) // NUEVO
-  updated_at DateTime   @updatedAt @db.Timestamp(6) // NUEVO
+  id          String     @id @default(uuid()) @db.Uuid
+  reserva_id  String     @db.Uuid
+  qr_id       String?    @db.Uuid
+  estado      EstadoPago @default(pendiente)
+  fecha_pago  DateTime?  @db.Timestamp(6)
+  comprobante String?    // Imagen/URL del comprobante de pago
+  created_at  DateTime   @default(now()) @db.Timestamp(6) // NUEVO
+  updated_at  DateTime   @updatedAt @db.Timestamp(6) // NUEVO
 
   qr      qrs?     @relation(fields: [qr_id], references: [id], onDelete: SetNull) // CAMBIO
   reserva reservas @relation(fields: [reserva_id], references: [id], onDelete: Cascade) // CAMBIO

@@ -18,6 +18,10 @@ import * as ImagePicker from "expo-image-picker";
 import colors from "../theme/colors";
 import type { NavProps } from "../navigation/types";
 import Footer from "../components/FooterGestor";
+import { ComplejosAPI } from "../api/complejos";
+import { HorariosAPI } from "../api/horarios";
+import MapPicker from "../components/MapPicker";
+import { useAuth } from "../context/AuthContext";
 
 /** ==================== Constantes básicas ==================== */
 type DayKey = "lun" | "mar" | "mie" | "jue" | "vie" | "sab" | "dom";
@@ -31,7 +35,7 @@ const DAYS: { key: DayKey; label: string }[] = [
   { key: "dom", label: "Domingo" },
 ];
 
-const PRECIOS = ["10 Bs", "20 Bs", "30 Bs", "40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
+const PRECIOS = ["40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
 const TIPOS_CAMPO = ["Fútbol 5", "Fútbol 6", "Fútbol 8", "Fútbol 11"];
 const TIPOS_CANCHA = ["Césped sintetico", "Tierra Batida", "Césped natural"];
 
@@ -44,6 +48,9 @@ type Cancha = {
 export default function RegistroComplejoDeportivoScreen(
   { navigation }: NavProps<"RegistroComplejoDeportivo">
 ) {
+  /** ==================== Auth ==================== */
+  const { user } = useAuth();
+
   /** ==================== Estado del formulario ==================== */
   // Datos básicos
   const [otb, setOtb] = useState("");
@@ -103,7 +110,7 @@ export default function RegistroComplejoDeportivoScreen(
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1], // cuadrado
       quality: 0.9,
@@ -149,6 +156,164 @@ export default function RegistroComplejoDeportivoScreen(
   };
 
   /** ==================== Enviar ==================== */
+  const registrarComplejo = async () => {
+    try {
+      // Obtener el admin_id del usuario autenticado
+      const adminId = user?.id?.toString();
+      if (!adminId) {
+        Alert.alert("Error", "No se pudo obtener el ID del administrador. Inicia sesión nuevamente.");
+        return;
+      }
+
+      // Extraer solo los números de los precios (ej: "40 Bs" -> 40)
+      const extractPrecio = (precio: string | null): number => {
+        if (!precio) return 0;
+        const match = precio.match(/\d+/);
+        return match ? parseFloat(match[0]) : 0;
+      };
+
+      const mapDias = {
+        lun: "LUNES",
+        mar: "MARTES",
+        mie: "MIERCOLES",
+        jue: "JUEVES",
+        vie: "VIERNES",
+        sab: "SABADO",
+        dom: "DOMINGO",
+      };
+
+      // Mapeo para TipoCampo (superficie de la cancha en BD)
+      const mapTipoCampo = {
+        "Césped sintetico": "SINTETICO",
+        "Tierra Batida": "TIERRA",
+        "Césped natural": "CESPED",
+      };
+
+      // Mapeo para TipoCancha (tamaño de cancha en BD)
+      const mapTipoCancha = {
+        "Fútbol 5": "FUT5",
+        "Fútbol 6": "FUT6",
+        "Fútbol 8": "FUT8",
+        "Fútbol 11": "FUT11",
+      };
+
+      const payload = {
+        nombre: nombreComplejo,
+        otb,
+        subalcaldia: subAlcaldia,
+        celular: telefono,
+        telefono,
+        diasDisponibles: Array.from(daysSelected).map((day) => mapDias[day]), // Mapear días al formato esperado
+        precioDiurnoPorHora: extractPrecio(precioDiurno),
+        precioNocturnoPorHora: extractPrecio(precioNocturno),
+        observaciones,
+        direccion: ubicacion || undefined,
+        qrUrl: qrUri || undefined,
+        admin_id: adminId,
+        canchas: canchas.map((cancha, index) => ({
+          nombre: `Cancha ${index + 1}`,
+          // tipoCampo en BD = superficie, tipoCancha en UI = superficie
+          tipoCampo: cancha.tipoCancha ? mapTipoCampo[cancha.tipoCancha as keyof typeof mapTipoCampo] || "SINTETICO" : "SINTETICO",
+          // tipoCancha en BD = tamaño, tipoCampo en UI = tamaño
+          tipoCancha: cancha.tipoCampo ? mapTipoCancha[cancha.tipoCampo as keyof typeof mapTipoCancha] || "FUT5" : "FUT5",
+        })),
+      };
+
+      const response = await ComplejosAPI.registrar(payload);
+      console.log("Complejo registrado:", response);
+
+      // Crear horarios automáticamente para cada cancha del complejo
+      try {
+        const complejoId = response.id;
+        const canchasCreadas = response.canchas || [];
+
+        console.log("Creando horarios para", canchasCreadas.length, "canchas...");
+
+        // Mapear días de vuelta a dayKeys para el loop
+        const dayKeysMap: Record<string, number> = {
+          LUNES: 1,
+          MARTES: 2,
+          MIERCOLES: 3,
+          JUEVES: 4,
+          VIERNES: 5,
+          SABADO: 6,
+          DOMINGO: 0,
+        };
+
+        const diasDisponiblesSet = new Set(
+          Array.from(daysSelected).map((day) => {
+            const mapDias = {
+              lun: "LUNES",
+              mar: "MARTES",
+              mie: "MIERCOLES",
+              jue: "JUEVES",
+              vie: "VIERNES",
+              sab: "SABADO",
+              dom: "DOMINGO",
+            };
+            return mapDias[day];
+          })
+        );
+
+        // Para cada cancha, crear horarios
+        for (const cancha of canchasCreadas) {
+          const slots = [];
+          const today = new Date();
+
+          // Crear slots para los próximos 30 días empezando mañana
+          for (let dayOffset = 1; dayOffset <= 30; dayOffset++) {
+            const currentDate = new Date(today);
+            currentDate.setDate(today.getDate() + dayOffset);
+
+            const dayOfWeek = currentDate.getDay(); // 0 = domingo, 1 = lunes, ...
+            const dayNames = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+            const dayName = dayNames[dayOfWeek];
+
+            // Solo crear horarios si este día está disponible
+            if (diasDisponiblesSet.has(dayName)) {
+              const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+
+              // Crear slots por hora de 06:00 a 23:00
+              for (let hour = 6; hour < 23; hour++) {
+                const horaInicio = `${String(hour).padStart(2, "0")}:00:00`;
+                const horaFin = `${String(hour + 1).padStart(2, "0")}:00:00`;
+
+                slots.push({
+                  fecha: dateStr,
+                  hora_inicio: horaInicio,
+                  hora_fin: horaFin,
+                  disponible: true,
+                });
+              }
+            }
+          }
+
+          // Crear horarios en bulk para esta cancha
+          if (slots.length > 0) {
+            console.log(`Creando ${slots.length} horarios para cancha ${cancha.id}...`);
+            await HorariosAPI.crearBulk({
+              cancha_id: cancha.id,
+              slots,
+            });
+          }
+        }
+
+        console.log("✅ Horarios creados exitosamente");
+      } catch (horarioError: any) {
+        console.error("⚠️ Error al crear horarios (complejo registrado pero sin horarios):", horarioError);
+        // No bloqueamos el flujo, el complejo ya fue creado
+      }
+
+      Alert.alert("Éxito", "Complejo registrado correctamente con horarios disponibles", [
+        { text: "OK", onPress: () => navigation.goBack() }
+      ]);
+    } catch (error: any) {
+      console.error("Error al registrar complejo:", error);
+      const mensaje = error?.response?.data?.message || error?.message || "No se pudo registrar el complejo";
+      Alert.alert("Error", mensaje);
+    }
+  };
+
   const onSubmit = () => {
     if (!otb || !subAlcaldia || !telefono || !nombreComplejo) {
       Alert.alert("Registro", "Completa OTB, SubAlcaldía, Celular y Nombre del complejo.");
@@ -162,27 +327,13 @@ export default function RegistroComplejoDeportivoScreen(
       Alert.alert("Registro", "Agrega al menos una cancha.");
       return;
     }
-    const payload = {
-      otb,
-      subAlcaldia,
-      telefono,
-      nombreComplejo,
-      dias: Array.from(daysSelected),
-      precioDiurno,
-      precioNocturno,
-      canchas,
-      observaciones,
-      qrUri,
-      ubicacion,
-    };
-    console.log("PAYLOAD:", payload);
-    Alert.alert("Registro", "Diseño OK. Datos listos para enviar.");
+    registrarComplejo();
   };
 
   /** ==================== Render ==================== */
   return (
     <SafeAreaView style={styles.screen}>
-      <Footer onLogout={() => navigation.replace("Welcome")} />
+      <Footer />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Título morado del mockup */}

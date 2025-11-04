@@ -165,4 +165,54 @@ export const QRsRepo = {
 
     return complejo?.admin.qrs_admin[0] || null;
   },
+
+  /**
+   * Obtener el QR vigente del administrador de una cancha
+   * Funciona tanto para canchas de complejo como canchas individuales
+   * @param cancha_id - ID de la cancha
+   */
+  async obtenerVigentePorCancha(cancha_id: string) {
+    const cancha = await prisma.canchas.findUnique({
+      where: { id: cancha_id },
+      include: {
+        // Si tiene complejo, buscar el admin del complejo
+        complejo: {
+          include: {
+            admin: {
+              include: {
+                qrs_admin: {
+                  where: { vigente: true },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+        // Si es cancha individual, buscar el admin directo
+        admin: {
+          include: {
+            qrs_admin: {
+              where: { vigente: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    if (!cancha) {
+      return null;
+    }
+
+    // Prioridad: primero complejo, luego admin directo
+    if (cancha.complejo) {
+      return cancha.complejo.admin.qrs_admin[0] || null;
+    }
+
+    if (cancha.admin) {
+      return cancha.admin.qrs_admin[0] || null;
+    }
+
+    return null;
+  },
 };

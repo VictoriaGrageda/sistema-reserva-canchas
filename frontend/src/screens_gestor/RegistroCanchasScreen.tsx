@@ -18,6 +18,9 @@ import * as ImagePicker from "expo-image-picker"; // imagen para subir (QR)
 import colors from "../theme/colors";
 import type { NavProps } from "../navigation/types";
 import Footer from "../components/FooterGestor";
+import { CanchasAPI, type TipoCampo, type TipoCancha, type DiaSemana, type RegistrarCanchaPayload } from "../api/canchas";
+import { HorariosAPI } from "../api/horarios";
+import { QRsAPI } from "../api/qrs";
 
 /** ==================== Helpers ==================== */
 type DayKey = "lun" | "mar" | "mie" | "jue" | "vie" | "sab" | "dom";
@@ -58,8 +61,11 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
   // QR (imagen)
   const [qrUri, setQrUri] = useState<string | null>(null); // implementacion del qr para subir
 
+  // Estado de carga
+  const [loading, setLoading] = useState(false);
+
   // Selects
-  const precios = ["10 Bs", "20 Bs", "30 Bs", "40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
+  const precios = ["40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
   const tiposCampo = ["Fútbol 5", "Fútbol 6", "Fútbol 8", "Fútbol 11"];
   const tiposCancha = ["Césped sintetico", "Tierra Batida", "Césped natural"];
 
@@ -132,7 +138,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1], // cuadrado (QR)
       quality: 0.9,
@@ -144,7 +150,49 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
 
   const removeQR = () => setQrUri(null); // parte de subir imagen qr al regustro de canchas
 
-  const onSubmit = () => {
+
+  // Mapear valores del UI a enums del backend
+  // IMPORTANTE: En BD, TipoCampo = superficie, TipoCancha = tamaño
+  const mapTipoCampo = (tipo: string): TipoCampo => {
+    // tipoCancha del UI (superficie) -> TipoCampo del BD
+    switch (tipo) {
+      case "Césped sintetico": return "SINTETICO";
+      case "Tierra Batida": return "TIERRA";
+      case "Césped natural": return "CESPED";
+      default: return "SINTETICO";
+    }
+  };
+
+  const mapTipoCancha = (tipo: string): TipoCancha => {
+    // tipoCampo del UI (tamaño) -> TipoCancha del BD
+    switch (tipo) {
+      case "Fútbol 5": return "FUT5";
+      case "Fútbol 6": return "FUT6";
+      case "Fútbol 8": return "FUT8";
+      case "Fútbol 11": return "FUT11";
+      default: return "FUT5";
+    }
+  };
+
+  const mapDiaSemana = (key: DayKey): DiaSemana => {
+    const map: Record<DayKey, DiaSemana> = {
+      lun: "LUNES",
+      mar: "MARTES",
+      mie: "MIERCOLES",
+      jue: "JUEVES",
+      vie: "VIERNES",
+      sab: "SABADO",
+      dom: "DOMINGO",
+    };
+    return map[key];
+  };
+
+  const extractPrecio = (precio: string): number => {
+    return parseInt(precio.replace(" Bs", ""), 10);
+  };
+
+  const onSubmit = async () => {
+    // Validaciones
     if (!otb || !subAlcaldia || !telefono) {
       Alert.alert("Registro", "Completa OTB, SubAlcaldía y Celular.");
       return;
@@ -153,25 +201,111 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
       Alert.alert("Registro", "Completa los selectores de precio y tipos.");
       return;
     }
-    const payload = {
-      otb,
-      subAlcaldia,
-      telefono,
-      ubicacion,
-      qrUri, // incluir QR
-      precioDiurno,
-      precioNocturno,
-      tipoCampo,
-      tipoCancha,
-      schedule,
-    };
-    console.log("PAYLOAD:", payload);
-    Alert.alert("Registro", "Diseño OK. Datos listos para enviar.");
+
+    // Verificar que haya al menos un día con horarios
+    const diasConHorarios = DAYS.filter((d) => schedule[d.key].length > 0);
+    if (diasConHorarios.length === 0) {
+      Alert.alert("Registro", "Debes agregar al menos un horario disponible.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 1. Preparar payload de la cancha
+      const diasDisponibles = diasConHorarios.map((d) => mapDiaSemana(d.key));
+
+      const canchaPayload: RegistrarCanchaPayload = {
+        nombre: otb,
+        // tipoCampo en BD = superficie, tipoCancha en UI = superficie
+        tipoCampo: mapTipoCampo(tipoCancha),
+        // tipoCancha en BD = tamaño, tipoCampo en UI = tamaño
+        tipoCancha: mapTipoCancha(tipoCampo),
+        otb,
+        subalcaldia: subAlcaldia,
+        celular: telefono,
+        diasDisponibles,
+        precioDiurnoPorHora: extractPrecio(precioDiurno),
+        precioNocturnoPorHora: extractPrecio(precioNocturno),
+      };
+
+      // 2. Registrar la cancha
+      const canchaResponse = await CanchasAPI.registrar(canchaPayload);
+      const canchaId = canchaResponse.id;
+
+      // 3. Subir QR si existe
+      if (qrUri) {
+        try {
+          await QRsAPI.subir({
+            imagen_qr: qrUri,
+            vigente: true,
+          });
+        } catch (qrError) {
+          console.log("Error al subir QR (no crítico):", qrError);
+          // No bloqueamos el registro si falla el QR
+        }
+      }
+
+      // 4. Crear horarios para los próximos 30 días (empezando desde mañana)
+      const today = new Date();
+      const slots = [];
+
+      for (let dayOffset = 1; dayOffset <= 30; dayOffset++) {
+        const currentDate = new Date(today);
+        currentDate.setDate(today.getDate() + dayOffset);
+
+        const dayOfWeek = currentDate.getDay(); // 0 = domingo, 1 = lunes, ...
+        const dayKeys: DayKey[] = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
+        const dayKey = dayKeys[dayOfWeek];
+
+        // Si hay horarios para este día, crearlos
+        const rangesForDay = schedule[dayKey];
+        if (rangesForDay && rangesForDay.length > 0) {
+          const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+
+          for (const range of rangesForDay) {
+            slots.push({
+              fecha: dateStr,
+              hora_inicio: range.start + ":00", // Convertir "06:30" a "06:30:00"
+              hora_fin: range.end + ":00",       // Convertir "19:00" a "19:00:00"
+              disponible: true,
+            });
+          }
+        }
+      }
+
+      // Crear horarios en bulk
+      if (slots.length > 0) {
+        await HorariosAPI.crearBulk({
+          cancha_id: canchaId,
+          slots,
+        });
+      }
+
+      Alert.alert(
+        "¡Éxito!",
+        "La cancha ha sido registrada correctamente con sus horarios.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("CanchasRegistradas"),
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error("Error al registrar cancha:", error);
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || error.message || "No se pudo registrar la cancha. Intenta nuevamente."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.screen}>
-      <Footer onLogout={() => navigation.replace('Welcome')} />
+      <Footer />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* TITULO  morado  */}
@@ -296,8 +430,13 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           </TouchableOpacity>
 
           {/* Submit */}
-          <TouchableOpacity style={styles.submit} onPress={onSubmit} activeOpacity={0.85}>
-            <Text style={styles.submitText}>Registrar</Text>
+          <TouchableOpacity
+            style={[styles.submit, loading && { opacity: 0.6 }]}
+            onPress={onSubmit}
+            activeOpacity={0.85}
+            disabled={loading}
+          >
+            <Text style={styles.submitText}>{loading ? "Registrando..." : "Registrar"}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

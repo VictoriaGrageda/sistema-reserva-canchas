@@ -15,6 +15,31 @@ export type RootStackParamList = {
   ReservarCanchas: undefined;
   ReservasRealizadas: undefined;
   RegistroComplejoDeportivo: undefined;
+  ConfirmarReserva: {
+    cancha: {
+      id: string;
+      nombre: string;
+      tipoCancha: string;
+      tipoCampo: string;
+    };
+    complejo?: {
+      id: string;
+      nombre: string;
+    };
+    horarios: Array<{
+      id: string;
+      hora_inicio: string;
+      hora_fin: string;
+      fecha: string;
+      precio: number;
+    }>;
+  };
+  DetalleReservaQR: {
+    reserva_id: string;
+  };
+  EditarCancha: {
+    cancha_id: string;
+  };
 };
 
 export type NavProps<T extends keyof RootStackParamList> =

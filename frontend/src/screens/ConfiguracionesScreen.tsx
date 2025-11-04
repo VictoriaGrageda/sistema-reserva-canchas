@@ -8,9 +8,8 @@ export default function ConfiguracionesScreen({ navigation }: NavProps<"Configur
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.green} />
-      <Footer onLogout={() => navigation.replace("Welcome")} />
+      <Footer />
 
-      
       <View style={styles.content}>
         <Text style={styles.placeholder}>Espacio para para configuraciones der usuario</Text>
       </View>

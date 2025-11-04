@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, JwtPayload } from '../lib/jwt';
 
-export type AuthedRequest = Request & { user?: JwtPayload & { sub?: string; id?: string }, userId?: string };
+export type AuthedRequest = Request & { user?: JwtPayload, userId?: string };
 
 export const requireAuth = (req: AuthedRequest, res: Response, next: NextFunction) => {
   const auth = req.headers.authorization || '';
@@ -12,16 +12,16 @@ export const requireAuth = (req: AuthedRequest, res: Response, next: NextFunctio
   const token = auth.slice(7);
 
   try {
-    // DEBUG opcional:
-    // console.log('[AUTH] token len:', token.length, token.slice(0,20)+'...');
-
-    const payload = verifyToken<JwtPayload & { sub?: string; id?: string }>(token);
+    const payload = verifyToken<JwtPayload>(token);
     req.user = payload;
-    req.userId = payload.sub ?? payload.id;
-    if (!req.userId) return res.status(401).json({ message: 'Token sin identificador (sub/id)' });
+    req.userId = payload.id;
+
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Token sin identificador (id)' });
+    }
+
     return next();
   } catch (e: any) {
-    // console.error('[AUTH] verify error:', e?.name, e?.message);
     return res.status(401).json({ message: 'Token inválido o expirado' });
   }
 };

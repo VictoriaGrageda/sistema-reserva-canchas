@@ -168,7 +168,7 @@ export const ReservasService = {
       throw err;
     }
 
-    // Verificar que el admin sea dueño del complejo
+    // Verificar que el admin sea dueño de la cancha (complejo o individual)
     const primerItem = reserva.items[0];
     if (!primerItem) {
       const err: any = new Error('Reserva sin horarios');
@@ -176,8 +176,10 @@ export const ReservasService = {
       throw err;
     }
 
-    const complejo = primerItem.horario.cancha.complejo;
-    if (complejo.admin_id !== admin_id) {
+    const cancha = primerItem.horario.cancha;
+    const adminDueno = cancha.complejo?.admin_id || cancha.admin_id;
+
+    if (adminDueno !== admin_id) {
       const err: any = new Error('No tienes permiso para modificar esta reserva');
       err.status = 403;
       throw err;

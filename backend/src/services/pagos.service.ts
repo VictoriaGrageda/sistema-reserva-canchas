@@ -24,6 +24,7 @@ export const PagosService = {
 
   /**
    * Obtener información del QR para realizar el pago de una reserva
+   * Soporta tanto canchas de complejos como canchas individuales
    * @param reserva_id - ID de la reserva
    */
   async obtenerQRParaPago(reserva_id: string) {
@@ -33,19 +34,19 @@ export const PagosService = {
       throw new Error('No se encontró el pago de esta reserva');
     }
 
-    // Obtener el complejo de la reserva
+    // Obtener la cancha de la reserva
     const primerItem = pago.reserva.items[0];
     if (!primerItem) {
       throw new Error('La reserva no tiene items');
     }
 
-    const complejo_id = primerItem.horario.cancha.complejo_id;
+    const cancha_id = primerItem.horario.cancha_id;
 
-    // Obtener el QR vigente del administrador del complejo
-    const qr = await QRsRepo.obtenerVigentePorComplejo(complejo_id);
+    // Obtener el QR vigente del administrador (funciona para complejo o cancha individual)
+    const qr = await QRsRepo.obtenerVigentePorCancha(cancha_id);
 
     if (!qr) {
-      throw new Error('El complejo no tiene un QR de pago configurado');
+      throw new Error('No hay un QR de pago configurado para esta cancha');
     }
 
     return {
@@ -58,11 +59,13 @@ export const PagosService = {
    * Cliente marca que realizó el pago
    * @param reserva_id - ID de la reserva
    * @param usuario_id - ID del usuario (para validación)
+   * @param comprobante - Imagen/URL del comprobante de pago
    * @param qr_id - ID del QR al que pagó (opcional)
    */
   async marcarPagoRealizado(
     reserva_id: string,
     usuario_id: string,
+    comprobante: string,
     qr_id?: string
   ) {
     // Validar que el usuario sea el dueño de la reserva
@@ -76,11 +79,12 @@ export const PagosService = {
       throw new Error('No tienes permiso para modificar este pago');
     }
 
-    return PagosRepo.marcarComoRealizado(reserva_id, qr_id);
+    return PagosRepo.marcarComoRealizado(reserva_id, comprobante, qr_id);
   },
 
   /**
    * Administrador confirma el pago
+   * Soporta tanto canchas de complejos como canchas individuales
    * @param pago_id - ID del pago
    * @param admin_id - ID del administrador (para validación)
    */
@@ -92,14 +96,16 @@ export const PagosService = {
       throw new Error('Pago no encontrado');
     }
 
-    // Validar que el admin sea dueño del complejo de la reserva
+    // Validar que el admin sea dueño de la cancha (complejo o individual)
     const primerItem = pago.reserva.items[0];
     if (!primerItem) {
       throw new Error('La reserva no tiene items');
     }
 
-    const complejo = primerItem.horario.cancha.complejo;
-    if (complejo.admin_id !== admin_id) {
+    const cancha = primerItem.horario.cancha;
+    const adminDueno = cancha.complejo?.admin_id || cancha.admin_id;
+
+    if (adminDueno !== admin_id) {
       throw new Error('No tienes permiso para confirmar este pago');
     }
 
@@ -115,6 +121,7 @@ export const PagosService = {
 
   /**
    * Administrador rechaza el pago
+   * Soporta tanto canchas de complejos como canchas individuales
    * @param pago_id - ID del pago
    * @param admin_id - ID del administrador (para validación)
    */
@@ -126,14 +133,16 @@ export const PagosService = {
       throw new Error('Pago no encontrado');
     }
 
-    // Validar que el admin sea dueño del complejo de la reserva
+    // Validar que el admin sea dueño de la cancha (complejo o individual)
     const primerItem = pago.reserva.items[0];
     if (!primerItem) {
       throw new Error('La reserva no tiene items');
     }
 
-    const complejo = primerItem.horario.cancha.complejo;
-    if (complejo.admin_id !== admin_id) {
+    const cancha = primerItem.horario.cancha;
+    const adminDueno = cancha.complejo?.admin_id || cancha.admin_id;
+
+    if (adminDueno !== admin_id) {
       throw new Error('No tienes permiso para rechazar este pago');
     }
 
@@ -169,6 +178,7 @@ export const PagosService = {
 
   /**
    * Obtener detalle de un pago
+   * Soporta tanto canchas de complejos como canchas individuales
    * @param pago_id - ID del pago
    * @param admin_id - ID del administrador (para validación, opcional)
    */
@@ -186,8 +196,10 @@ export const PagosService = {
         throw new Error('La reserva no tiene items');
       }
 
-      const complejo = primerItem.horario.cancha.complejo;
-      if (complejo.admin_id !== admin_id) {
+      const cancha = primerItem.horario.cancha;
+      const adminDueno = cancha.complejo?.admin_id || cancha.admin_id;
+
+      if (adminDueno !== admin_id) {
         throw new Error('No tienes permiso para ver este pago');
       }
     }

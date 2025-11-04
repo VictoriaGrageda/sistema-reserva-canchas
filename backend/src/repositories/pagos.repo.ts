@@ -98,9 +98,10 @@ export const PagosRepo = {
   /**
    * Cliente marca que realizó el pago
    * @param reserva_id - ID de la reserva
+   * @param comprobante - Imagen/URL del comprobante de pago
    * @param qr_id - ID del QR al que pagó (opcional)
    */
-  async marcarComoRealizado(reserva_id: string, qr_id?: string) {
+  async marcarComoRealizado(reserva_id: string, comprobante: string, qr_id?: string) {
     // Buscar el pago de la reserva
     const pago = await prisma.pagos.findFirst({
       where: { reserva_id },
@@ -123,6 +124,7 @@ export const PagosRepo = {
       where: { id: pago.id },
       data: {
         qr_id: qr_id || pago.qr_id, // actualizar el QR si se proporciona
+        comprobante: comprobante, // guardar el comprobante de pago
         // El estado sigue siendo "pendiente" hasta que el admin confirme
       },
       include: {

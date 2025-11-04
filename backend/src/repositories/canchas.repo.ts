@@ -68,6 +68,41 @@ findDetalle: (id: string) =>
   }),
 
 
+  // ✅ LISTAR CANCHAS INDIVIDUALES (sin complejo, solo con admin_id)
+  listIndividuales: (filtros?: { ciudad?: string; nombre?: string }) => {
+    const where: any = {
+      activo: true,
+      admin_id: { not: null }, // tiene admin_id
+      complejo_id: null,       // NO tiene complejo
+    };
+
+    // Filtros opcionales
+    if (filtros?.ciudad || filtros?.nombre) {
+      where.OR = [
+        filtros.ciudad ? { ciudad: { contains: filtros.ciudad, mode: 'insensitive' } } : undefined,
+        filtros.nombre ? { nombre: { contains: filtros.nombre, mode: 'insensitive' } } : undefined,
+      ].filter(Boolean);
+    }
+
+    return prisma.canchas.findMany({
+      where,
+      select: {
+        id: true,
+        nombre: true,
+        tipoCancha: true,
+        tipoCampo: true,
+        ciudad: true,
+        direccion: true,
+        precioDiurnoPorHora: true,
+        precioNocturnoPorHora: true,
+        admin: {
+          select: { id: true, nombre: true, correo: true },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  },
+
   // (ya lo tenías) precios con fallback
   async getPrecios(canchaId: string) {
     const cancha = await prisma.canchas.findUnique({

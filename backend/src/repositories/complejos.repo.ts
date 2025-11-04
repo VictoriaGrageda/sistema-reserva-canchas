@@ -16,17 +16,24 @@ export const ComplejosRepo = {
     }),
 
   // Listar complejos filtrados por ciudad y nombre
-  list: ({ ciudad, nombre }: Filtros) =>
-    prisma.complejos.findMany({
-      where: {
-        AND: [
-          ciudad ? { ciudad: { contains: ciudad, mode: 'insensitive' } } : {},
-          nombre ? { nombre: { contains: nombre, mode: 'insensitive' } } : {},
-        ],
-      },
+  list: ({ ciudad, nombre }: Filtros) => {
+    // Si hay filtros, buscar con OR (ciudad O nombre)
+    // Si no hay filtros, listar todos
+    const where: any = ciudad || nombre
+      ? {
+          OR: [
+            ciudad ? { ciudad: { contains: ciudad, mode: 'insensitive' as any } } : undefined,
+            nombre ? { nombre: { contains: nombre, mode: 'insensitive' as any } } : undefined,
+          ].filter(Boolean),
+        }
+      : {};
+
+    return prisma.complejos.findMany({
+      where,
       include: { canchas: true },
       orderBy: { created_at: 'desc' },
-    }),
+    });
+  },
 
   // Listar complejos por administrador
   listByAdmin: (admin_id: string) =>

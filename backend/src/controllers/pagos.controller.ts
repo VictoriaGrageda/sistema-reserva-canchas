@@ -22,6 +22,24 @@ const serializePago = (pago: any) => {
   };
 };
 
+/**
+ * Verificar rol de administrador (con fallback a BD si el token no tiene rol)
+ */
+const verificarRolAdmin = async (req: AuthedRequest): Promise<boolean> => {
+  let rolUsuario = req.user?.rol;
+
+  if (!rolUsuario && req.user?.id) {
+    const { prisma } = await import('../generated/prisma');
+    const usuario = await prisma.usuarios.findUnique({
+      where: { id: req.user.id },
+      select: { rol: true }
+    });
+    rolUsuario = usuario?.rol;
+  }
+
+  return rolUsuario === 'administrador';
+};
+
 export const PagosController = {
   /**
    * GET /api/v1/pagos/reserva/:reserva_id
@@ -90,9 +108,9 @@ export const PagosController = {
         return res.status(400).json({ message: 'ID de reserva requerido' });
       }
 
-      const { qr_id } = req.body;
+      const { comprobante, qr_id } = req.body;
 
-      const pago = await PagosService.marcarPagoRealizado(reserva_id, usuario_id, qr_id);
+      const pago = await PagosService.marcarPagoRealizado(reserva_id, usuario_id, comprobante, qr_id);
 
       return res.json({
         message: 'Pago marcado como realizado. Espera la confirmación del administrador.',
@@ -116,8 +134,13 @@ export const PagosController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
-        return res.status(403).json({ message: 'Solo los administradores pueden acceder' });
+      // Verificar rol de administrador
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
+        return res.status(403).json({
+          message: 'Solo los administradores pueden acceder',
+          hint: 'Si recibes este error, intenta cerrar sesión y volver a iniciar sesión para actualizar tu token.'
+        });
       }
 
       const { estado, complejo_id } = req.query;
@@ -145,7 +168,9 @@ export const PagosController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      // Verificar rol de administrador
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden acceder' });
       }
 
@@ -170,7 +195,8 @@ export const PagosController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden acceder' });
       }
 
@@ -199,7 +225,8 @@ export const PagosController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden confirmar pagos' });
       }
 
@@ -231,7 +258,8 @@ export const PagosController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden rechazar pagos' });
       }
 
@@ -264,7 +292,8 @@ export const PagosController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden cambiar estado de pagos' });
       }
 

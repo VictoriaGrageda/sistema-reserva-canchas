@@ -5,6 +5,9 @@ import { z } from 'zod';
  */
 export const MarcarPagoRealizadoSchema = z.object({
   qr_id: z.string().uuid('ID de QR inválido').optional(),
+  comprobante: z.string({
+    required_error: 'El comprobante de pago es requerido',
+  }).min(1, 'Debes subir una imagen del comprobante de pago'),
 });
 
 export type MarcarPagoRealizadoInput = z.infer<typeof MarcarPagoRealizadoSchema>;
