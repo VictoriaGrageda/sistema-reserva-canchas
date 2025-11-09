@@ -6,6 +6,8 @@ type SlotInput = {
   hora_inicio: string;    // "08:00:00"
   hora_fin: string;       // "09:00:00"
   disponible?: boolean;
+  precio?: number;        // Precio del slot
+  es_diurno?: boolean;    // true = diurno, false = nocturno
 };
 
 export const HorariosRepo = {
@@ -62,6 +64,8 @@ export const HorariosRepo = {
             hora_inicio,
             hora_fin,
             disponible: s.disponible ?? true,
+            precio: s.precio,
+            es_diurno: s.es_diurno ?? true,
           },
         });
         createdIds.push(h.id);

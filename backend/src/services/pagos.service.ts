@@ -28,6 +28,8 @@ export const PagosService = {
    * @param reserva_id - ID de la reserva
    */
   async obtenerQRParaPago(reserva_id: string) {
+    console.log('🔍 Obteniendo QR para pago de reserva:', reserva_id);
+
     const pago = await PagosRepo.obtenerPorReserva(reserva_id);
 
     if (!pago) {
@@ -41,13 +43,17 @@ export const PagosService = {
     }
 
     const cancha_id = primerItem.horario.cancha_id;
+    console.log('📍 Buscando QR para cancha_id:', cancha_id);
 
     // Obtener el QR vigente del administrador (funciona para complejo o cancha individual)
     const qr = await QRsRepo.obtenerVigentePorCancha(cancha_id);
 
     if (!qr) {
+      console.error('❌ No se encontró QR para cancha:', cancha_id);
       throw new Error('No hay un QR de pago configurado para esta cancha');
     }
+
+    console.log('✅ QR encontrado:', { id: qr.id, vigente: qr.vigente });
 
     return {
       pago,

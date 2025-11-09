@@ -2,6 +2,30 @@ import { Request, Response, NextFunction } from 'express';
 import { QRsService } from '../services/qrs.service';
 import type { AuthedRequest } from '../middlewares/auth.middleware';
 
+/**
+ * Verificar rol de administrador (siempre consulta BD para asegurar rol actualizado)
+ */
+const verificarRolAdmin = async (req: AuthedRequest): Promise<boolean> => {
+  if (!req.user?.id) {
+    return false;
+  }
+
+  // Siempre consultar la BD para obtener el rol actualizado
+  const { PrismaClient } = await import('../generated/prisma');
+  const prisma = new PrismaClient();
+
+  try {
+    const usuario = await prisma.usuarios.findUnique({
+      where: { id: req.user.id },
+      select: { rol: true }
+    });
+
+    return usuario?.rol === 'administrador';
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
 export const QRsController = {
   /**
    * POST /api/v1/qrs
@@ -14,9 +38,13 @@ export const QRsController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      // Verificar que el usuario sea administrador
-      if (req.user?.rol !== 'administrador') {
-        return res.status(403).json({ message: 'Solo los administradores pueden subir QRs' });
+      // Verificar que el usuario sea administrador (con fallback a BD)
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
+        return res.status(403).json({
+          message: 'Solo los administradores pueden subir QRs',
+          hint: 'Si recibes este error, intenta cerrar sesión y volver a iniciar sesión para actualizar tu token.'
+        });
       }
 
       const { imagen_qr, vigente } = req.body;
@@ -43,7 +71,8 @@ export const QRsController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden ver sus QRs' });
       }
 
@@ -66,7 +95,8 @@ export const QRsController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden acceder' });
       }
 
@@ -132,7 +162,8 @@ export const QRsController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden activar QRs' });
       }
 
@@ -164,7 +195,8 @@ export const QRsController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden desactivar QRs' });
       }
 
@@ -196,7 +228,8 @@ export const QRsController = {
         return res.status(401).json({ message: 'Usuario no autenticado' });
       }
 
-      if (req.user?.rol !== 'administrador') {
+      const esAdmin = await verificarRolAdmin(req);
+      if (!esAdmin) {
         return res.status(403).json({ message: 'Solo los administradores pueden eliminar QRs' });
       }
 

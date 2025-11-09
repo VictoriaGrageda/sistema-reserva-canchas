@@ -13,6 +13,10 @@ export const QRsService = {
       throw new Error('La imagen del QR es requerida');
     }
 
+    console.log('📤 Guardando QR para admin:', admin_id);
+    console.log('📏 Tamaño de imagen_qr:', imagen_qr.length, 'caracteres');
+    console.log('🔍 Tipo de imagen:', imagen_qr.substring(0, 30) + '...');
+
     return QRsRepo.crear(admin_id, imagen_qr, vigente);
   },
 

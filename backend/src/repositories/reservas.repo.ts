@@ -11,9 +11,18 @@ export const ReservasRepo = {
    * Crear una reserva con sus items en una transacción atómica
    * @param usuario_id - ID del usuario que hace la reserva
    * @param horarios - Array de horarios a reservar con sus precios
+   * @param opciones - Opciones adicionales (tipo_reserva, recurrencia, etc.)
    * @returns Reserva creada con todos sus datos relacionados
    */
-  async crearConItems(usuario_id: string, horarios: HorarioItem[]) {
+  async crearConItems(
+    usuario_id: string,
+    horarios: HorarioItem[],
+    opciones?: {
+      tipo_reserva?: string;
+      recurrencia_dia_semana?: string;
+      recurrencia_hora?: string;
+    }
+  ) {
     return prisma.$transaction(async (tx) => {
       // 1. Validar que todos los horarios existan y estén disponibles
       const horariosIds = horarios.map((h) => h.horario_id);
@@ -48,6 +57,9 @@ export const ReservasRepo = {
         data: {
           usuario_id,
           estado: 'pendiente',
+          tipo_reserva: (opciones?.tipo_reserva as any) || 'diaria',
+          recurrencia_dia_semana: opciones?.recurrencia_dia_semana as any,
+          recurrencia_hora: opciones?.recurrencia_hora,
         },
       });
 
@@ -380,6 +392,7 @@ export const ReservasRepo = {
 
   /**
    * Listar reservas de los complejos del administrador
+   * Incluye tanto complejos deportivos como canchas individuales
    */
   async listarPorAdmin(
     admin_id: string,
@@ -393,10 +406,20 @@ export const ReservasRepo = {
           some: {
             horario: {
               cancha: {
-                complejo: {
-                  admin_id,
-                  ...(complejo_id && { id: complejo_id }),
-                },
+                OR: [
+                  // Canchas de complejos del admin
+                  {
+                    complejo: {
+                      admin_id,
+                      ...(complejo_id && { id: complejo_id }),
+                    },
+                  },
+                  // Canchas individuales del admin
+                  {
+                    admin_id,
+                    complejo_id: null,
+                  },
+                ],
               },
               ...(fecha && { fecha: new Date(fecha) }),
             },

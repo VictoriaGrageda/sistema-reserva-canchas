@@ -6,6 +6,8 @@ import {
   CrearReservaSchema,
   ModificarReservaSchema,
   CambiarEstadoReservaSchema,
+  CrearReservaMensualSchema,
+  CrearReservaRecurrenteSchema,
 } from '../validations/reservas.schema';
 
 const router = Router();
@@ -66,6 +68,38 @@ router.delete(
   '/:id',
   requireAuth,
   ReservasController.cancelar
+);
+
+/**
+ * 🆕 POST /api/v1/reservas/mensual
+ * Crear una reserva mensual
+ */
+router.post(
+  '/mensual',
+  requireAuth,
+  validate(CrearReservaMensualSchema),
+  ReservasController.crearMensual
+);
+
+/**
+ * Preview mensual: devuelve cantidad de sesiones y total estimado
+ */
+router.post(
+  '/mensual/preview',
+  requireAuth,
+  validate(CrearReservaMensualSchema),
+  ReservasController.previewMensual
+);
+
+/**
+ * 🆕 POST /api/v1/reservas/recurrente
+ * Crear una reserva recurrente
+ */
+router.post(
+  '/recurrente',
+  requireAuth,
+  validate(CrearReservaRecurrenteSchema),
+  ReservasController.crearRecurrente
 );
 
 // ==================== Rutas de Administrador ====================

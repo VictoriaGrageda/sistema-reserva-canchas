@@ -18,6 +18,7 @@ import Footer from "../components/Footer";
 import type { NavProps } from "../navigation/types";
 import { ReservasAPI } from "../api/reservas";
 import { PagosAPI } from "../api/pagos";
+import { formatearFechaCompleta } from "../utils/fecha";
 
 interface Horario {
   hora_inicio: string;
@@ -61,6 +62,20 @@ export default function DetalleReservaQRScreen({
   const [qrData, setQRData] = useState<QRData | null>(null);
   const [comprobanteUri, setComprobanteUri] = useState<string | null>(null);
 
+  // Normaliza URIs de imagen: maneja base64 sin prefijo y fuerza https
+  const normalizeQrUri = (val?: string) => {
+    if (!val) return undefined as unknown as string;
+    if (val.startsWith('data:image/')) return val;
+    if (val.startsWith('http://')) return val.replace('http://', 'https://');
+    // Si parece base64 sin prefijo
+    try {
+      if (/^[A-Za-z0-9+/=]+$/.test(val.slice(0, 40))) {
+        return `data:image/png;base64,${val}`;
+      }
+    } catch {}
+    return val;
+  };
+
   const cargarDatos = async () => {
     try {
       console.log("🔍 Cargando detalles de reserva:", reserva_id);
@@ -84,12 +99,16 @@ export default function DetalleReservaQRScreen({
       }
 
       // Extraer datos del QR
-      const qr = qrResponse.data || qrResponse;
-      if (qr && qr.qr) {
-        setQRData(qr.qr);
-        console.log("✅ QR cargado");
+      const qrResponseData = qrResponse.data || qrResponse;
+      console.log("📦 Estructura de respuesta QR:", qrResponseData);
+
+      // El backend retorna { data: { pago, qr } }
+      if (qrResponseData.qr) {
+        setQRData(qrResponseData.qr);
+        console.log("✅ QR cargado:", qrResponseData.qr);
       } else {
         console.log("⚠️ No se encontró QR en la respuesta");
+        console.log("⚠️ Estructura recibida:", JSON.stringify(qrResponseData, null, 2));
       }
     } catch (error: any) {
       console.error("❌ Error al cargar datos:", error);
@@ -125,10 +144,13 @@ export default function DetalleReservaQRScreen({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
+      base64: true, // Obtener base64 para poder guardar y mostrar
     });
 
-    if (!result.canceled) {
-      setComprobanteUri(result.assets[0].uri);
+    if (!result.canceled && result.assets[0].base64) {
+      // Convertir a data URI
+      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setComprobanteUri(base64Image);
     }
   };
 
@@ -347,11 +369,7 @@ export default function DetalleReservaQRScreen({
               <View style={styles.horarioRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.horarioFecha}>
-                    {new Date(item.horario.fecha).toLocaleDateString("es-ES", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    })}
+                    {formatearFechaCompleta(item.horario.fecha)}
                   </Text>
                   <View style={styles.horarioTimeRow}>
                     <Ionicons name="time" size={14} color={colors.green} />
@@ -376,20 +394,27 @@ export default function DetalleReservaQRScreen({
         </View>
 
         {/* QR de Pago */}
-        {qrData && qrData.imagen_qr && (
+        {qrData && qrData.imagen_qr ? (
           <View style={styles.qrSection}>
             <Text style={styles.sectionTitle}>Código QR para Pago</Text>
             <View style={styles.qrCard}>
               <Image
-                source={{ uri: qrData.imagen_qr }}
+                source={{ uri: normalizeQrUri(qrData.imagen_qr) }}
                 style={styles.qrImage}
                 resizeMode="contain"
               />
-              <Text style={styles.qrMonto}>Monto: {qrData.monto} Bs</Text>
               <Text style={styles.qrInstrucciones}>
                 Escanea este código QR con tu aplicación bancaria para realizar el pago
               </Text>
             </View>
+          </View>
+        ) : (
+          <View style={styles.infoCard}>
+            <Ionicons name="alert-circle" size={20} color="#FF9800" />
+            <Text style={styles.infoCardText}>
+              <Text style={{ fontWeight: "700" }}>Atención:</Text>{"\n"}
+              El administrador aún no ha configurado un código QR para pagos. Por favor, contacta al administrador para obtener los datos de pago.
+            </Text>
           </View>
         )}
 

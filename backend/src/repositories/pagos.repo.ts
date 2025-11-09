@@ -102,6 +102,10 @@ export const PagosRepo = {
    * @param qr_id - ID del QR al que pagó (opcional)
    */
   async marcarComoRealizado(reserva_id: string, comprobante: string, qr_id?: string) {
+    console.log('📝 Marcando pago como realizado para reserva:', reserva_id);
+    console.log('📏 Tamaño del comprobante:', comprobante?.length || 0, 'caracteres');
+    console.log('🔍 Tipo de comprobante:', comprobante?.substring(0, 30) + '...');
+
     // Buscar el pago de la reserva
     const pago = await prisma.pagos.findFirst({
       where: { reserva_id },
@@ -120,7 +124,7 @@ export const PagosRepo = {
     }
 
     // Actualizar el pago (aún queda pendiente hasta que el admin confirme)
-    return prisma.pagos.update({
+    const pagoActualizado = await prisma.pagos.update({
       where: { id: pago.id },
       data: {
         qr_id: qr_id || pago.qr_id, // actualizar el QR si se proporciona
@@ -132,6 +136,9 @@ export const PagosRepo = {
         reserva: true,
       },
     });
+
+    console.log('✅ Pago actualizado con comprobante');
+    return pagoActualizado;
   },
 
   /**
@@ -225,6 +232,10 @@ export const PagosRepo = {
    * @param admin_id - ID del administrador
    * @param filters - Filtros opcionales
    */
+  /**
+   * Listar pagos del administrador
+   * Incluye tanto complejos deportivos como canchas individuales
+   */
   async listarPorAdmin(
     admin_id: string,
     filters: { estado?: string; complejo_id?: string }
@@ -238,10 +249,20 @@ export const PagosRepo = {
             some: {
               horario: {
                 cancha: {
-                  complejo: {
-                    admin_id,
-                    ...(complejo_id && { id: complejo_id }),
-                  },
+                  OR: [
+                    // Canchas de complejos del admin
+                    {
+                      complejo: {
+                        admin_id,
+                        ...(complejo_id && { id: complejo_id }),
+                      },
+                    },
+                    // Canchas individuales del admin
+                    {
+                      admin_id,
+                      complejo_id: null,
+                    },
+                  ],
                 },
               },
             },

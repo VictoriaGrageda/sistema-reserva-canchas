@@ -21,6 +21,7 @@ import ConfiguracionesScreen from '../screens/ConfiguracionesScreen';
 import HistorialReservasScreen from '../screens/HistorialReservasScreen';
 import ConfirmarReservaScreen from '../screens/ConfirmarReservaScreen';
 import DetalleReservaQRScreen from '../screens/DetalleReservaQRScreen'; 
+import TipoReservaScreen from '../screens/TipoReservaScreen';
 
 
 
@@ -91,6 +92,7 @@ export default function AppNavigator() {
     <Stack.Navigator key="client" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="ReservarCanchas" component={ReservarCanchasScreen} />
+      <Stack.Screen name="TipoReserva" component={TipoReservaScreen} />
       <Stack.Screen name="ConfirmarReserva" component={ConfirmarReservaScreen} />
       <Stack.Screen name="DetalleReservaQR" component={DetalleReservaQRScreen} />
       <Stack.Screen name="ReservasRealizadas" component={ReservasRealizadasScreen} />

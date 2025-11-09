@@ -14,6 +14,7 @@ import colors from "../theme/colors";
 import Footer from "../components/Footer";
 import { ReservasAPI } from "../api/reservas";
 import type { NavProps } from "../navigation/types";
+import { formatearFechaCorta } from "../utils/fecha";
 
 interface Item {
   horario: {
@@ -146,11 +147,7 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
                     <View key={idx} style={styles.horarioItem}>
                       <Ionicons name="time-outline" size={14} color={colors.dark} />
                       <Text style={styles.horarioText}>
-                        {new Date(item.horario.fecha).toLocaleDateString("es-ES", {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                        })}{" "}
+                        {formatearFechaCorta(item.horario.fecha)}{" "}
                         • {item.horario.hora_inicio.substring(0, 5)} - {item.horario.hora_fin.substring(0, 5)}
                       </Text>
                       <Text style={styles.precioItem}>{item.precio} Bs</Text>

@@ -48,9 +48,9 @@ model complejos {
   subalcaldia           String
   celular               String
   telefono              String?
-  diasDisponibles       DiaSemana[]
-  precioDiurnoPorHora   Decimal     @db.Decimal(10, 2)
-  precioNocturnoPorHora Decimal     @db.Decimal(10, 2)
+  diasDisponibles       DiaSemana[] @default([]) // Ahora opcional, se configura en edición
+  precioDiurnoPorHora   Decimal?    @db.Decimal(10, 2) // Opcional, se configura en edición
+  precioNocturnoPorHora Decimal?    @db.Decimal(10, 2) // Opcional, se configura en edición
   direccion             String?
   ciudad                String?
   lat                   Decimal?    @db.Decimal(9, 6)
@@ -101,10 +101,16 @@ model canchas {
   lng                   Decimal?    @db.Decimal(9, 6)
   precioDiurnoPorHora   Decimal?    @db.Decimal(10, 2)
   precioNocturnoPorHora Decimal?    @db.Decimal(10, 2)
+
+  // 🆕 Nueva configuración de horarios
+  horaCorte             String?     @default("18:00") // Hora de corte para diurno/nocturno (HH:MM)
+
   activo                Boolean     @default(true)
   created_at            DateTime    @default(now()) @db.Timestamp(6)
   updated_at            DateTime    @updatedAt @db.Timestamp(6)
+
   horarios              horarios[]
+  configuraciones_horarios configuraciones_horarios[]
 
   @@unique([complejo_id, nombre])
   @@index([complejo_id])
@@ -114,6 +120,22 @@ model canchas {
   @@map("canchas")
 }
 
+model configuraciones_horarios {
+  id              String    @id @default(uuid()) @db.Uuid
+  cancha_id       String    @db.Uuid
+  dia_semana      DiaSemana
+  hora_inicio     String    // HH:MM (formato 24 horas)
+  hora_fin        String    // HH:MM (formato 24 horas)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+
+  cancha canchas @relation(fields: [cancha_id], references: [id], onDelete: Cascade)
+
+  @@unique([cancha_id, dia_semana, hora_inicio, hora_fin])
+  @@index([cancha_id])
+  @@map("configuraciones_horarios")
+}
+
 model horarios {
   id          String   @id @default(uuid()) @db.Uuid
   cancha_id   String   @db.Uuid
@@ -121,14 +143,20 @@ model horarios {
   hora_inicio DateTime @db.Time(6)
   hora_fin    DateTime @db.Time(6)
   disponible  Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamp(6) // NUEVO
-  updated_at  DateTime @updatedAt @db.Timestamp(6) // NUEVO
 
-  cancha        canchas         @relation(fields: [cancha_id], references: [id], onDelete: Cascade) // CAMBIO
+  // 🆕 Campos para el nuevo sistema
+  precio      Decimal? @db.Decimal(10, 2) // Precio específico del slot
+  es_diurno   Boolean  @default(true)      // true = diurno, false = nocturno
+
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @updatedAt @db.Timestamp(6)
+
+  cancha        canchas         @relation(fields: [cancha_id], references: [id], onDelete: Cascade)
   reserva_items reserva_items[]
 
-  @@unique([cancha_id, fecha, hora_inicio, hora_fin]) // NUEVO (evita duplicados exactos)
-  @@index([cancha_id, fecha]) // NUEVO (búsquedas por día)
+  @@unique([cancha_id, fecha, hora_inicio, hora_fin])
+  @@index([cancha_id, fecha])
+  @@index([cancha_id, fecha, disponible]) // 🆕 Para búsquedas de disponibilidad
   @@map("horarios")
 }
 
@@ -136,16 +164,25 @@ model reservas {
   id         String        @id @default(uuid()) @db.Uuid
   usuario_id String        @db.Uuid
   estado     EstadoReserva @default(pendiente)
+
+  // 🆕 Tipo de reserva
+  tipo_reserva TipoReserva @default(diaria)
+
+  // 🆕 Para reservas recurrentes
+  recurrencia_dia_semana DiaSemana? // Día de la semana para recurrencia
+  recurrencia_hora       String?     // Hora para recurrencia (HH:MM)
+
   created_at DateTime      @default(now()) @db.Timestamp(6)
-  updated_at DateTime      @updatedAt @db.Timestamp(6) // NUEVO
+  updated_at DateTime      @updatedAt @db.Timestamp(6)
 
   notificaciones notificaciones[] @relation("ReservaNotificaciones")
   pagos          pagos[]
   items          reserva_items[]
 
-  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Restrict) // CAMBIO
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
 
   @@index([usuario_id])
+  @@index([tipo_reserva])
   @@map("reservas")
 }
 
@@ -172,7 +209,7 @@ model pagos {
   qr_id       String?    @db.Uuid
   estado      EstadoPago @default(pendiente)
   fecha_pago  DateTime?  @db.Timestamp(6)
-  comprobante String?    // Imagen/URL del comprobante de pago
+  comprobante String?    @db.Text // Cambio: soportar imágenes base64 grandes
   created_at  DateTime   @default(now()) @db.Timestamp(6) // NUEVO
   updated_at  DateTime   @updatedAt @db.Timestamp(6) // NUEVO
 
@@ -187,7 +224,7 @@ model pagos {
 model qrs {
   id         String   @id @default(uuid()) @db.Uuid
   admin_id   String   @db.Uuid
-  imagen_qr  String
+  imagen_qr  String   @db.Text // Cambio: soportar imágenes base64 grandes
   vigente    Boolean  @default(true)
   created_at DateTime @default(now()) @db.Timestamp(6)
   updated_at DateTime @updatedAt @db.Timestamp(6) // NUEVO
@@ -261,4 +298,10 @@ enum TipoCancha {
   FUT6
   FUT8
   FUT11
+}
+
+enum TipoReserva {
+  diaria      // D+1: solo para mañana
+  mensual     // Bloquea horarios durante todo el mes
+  recurrente  // Repite mismo día/hora cada mes
 }

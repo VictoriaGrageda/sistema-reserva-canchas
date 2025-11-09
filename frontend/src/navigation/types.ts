@@ -12,7 +12,19 @@ export type RootStackParamList = {
   SolicitudesReservas: undefined;
   Configuraciones: undefined;
   HistorialReservas: undefined;
-  ReservarCanchas: undefined;
+  ReservarCanchas: {
+    cancha?: {
+      id: string;
+      nombre: string;
+      tipoCancha: string;
+      tipoCampo: string;
+    };
+    complejo?: {
+      id: string;
+      nombre: string;
+    };
+    tipoReserva?: 'diaria' | 'mensual' | 'recurrente';
+  } | undefined;
   ReservasRealizadas: undefined;
   RegistroComplejoDeportivo: undefined;
   ConfirmarReserva: {
@@ -33,12 +45,26 @@ export type RootStackParamList = {
       fecha: string;
       precio: number;
     }>;
+    tipoReserva?: 'diaria' | 'mensual' | 'recurrente';
   };
   DetalleReservaQR: {
     reserva_id: string;
   };
   EditarCancha: {
     cancha_id: string;
+  };
+  GestionDisponibilidad: undefined;
+  TipoReserva: {
+    cancha: {
+      id: string;
+      nombre: string;
+      tipoCancha: string;
+      tipoCampo: string;
+    };
+    complejo?: {
+      id: string;
+      nombre: string;
+    };
   };
 };
 

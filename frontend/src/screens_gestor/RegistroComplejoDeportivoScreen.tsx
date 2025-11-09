@@ -19,23 +19,10 @@ import colors from "../theme/colors";
 import type { NavProps } from "../navigation/types";
 import Footer from "../components/FooterGestor";
 import { ComplejosAPI } from "../api/complejos";
-import { HorariosAPI } from "../api/horarios";
-import MapPicker from "../components/MapPicker";
+import { QRsAPI } from "../api/qrs";
 import { useAuth } from "../context/AuthContext";
 
 /** ==================== Constantes básicas ==================== */
-type DayKey = "lun" | "mar" | "mie" | "jue" | "vie" | "sab" | "dom";
-const DAYS: { key: DayKey; label: string }[] = [
-  { key: "lun", label: "Lunes" },
-  { key: "mar", label: "Martes" },
-  { key: "mie", label: "Miércoles" },
-  { key: "jue", label: "Jueves" },
-  { key: "vie", label: "Viernes" },
-  { key: "sab", label: "Sábado" },
-  { key: "dom", label: "Domingo" },
-];
-
-const PRECIOS = ["40 Bs", "50 Bs", "60 Bs", "70 Bs", "80 Bs"];
 const TIPOS_CAMPO = ["Fútbol 5", "Fútbol 6", "Fútbol 8", "Fútbol 11"];
 const TIPOS_CANCHA = ["Césped sintetico", "Tierra Batida", "Césped natural"];
 
@@ -60,12 +47,6 @@ export default function RegistroComplejoDeportivoScreen(
   const [observaciones, setObservaciones] = useState("");
   const [ubicacion, setUbicacion] = useState<string | null>(null);
 
-  // Días disponibles (chips)
-  const [daysSelected, setDaysSelected] = useState<Set<DayKey>>(new Set());
-
-  // Precios
-  const [precioDiurno, setPrecioDiurno] = useState<string | null>(null);
-  const [precioNocturno, setPrecioNocturno] = useState<string | null>(null);
 
   // Canchas del complejo
   const [canchas, setCanchas] = useState<Cancha[]>([]);
@@ -78,30 +59,20 @@ export default function RegistroComplejoDeportivoScreen(
   // QR (imagen)
   const [qrUri, setQrUri] = useState<string | null>(null);
 
-  // Select modal genérico (para precios)
+  // Select modal genérico (para tipos de campo/cancha)
   const [selectOpen, setSelectOpen] = useState<null | {
     title: string;
     options: string[];
     onPick: (v: string) => void;
   }>(null);
 
-  /** ==================== Acciones helpers ==================== */
-  const toggleDay = (day: DayKey) => {
-    setDaysSelected((prev) => {
-      const next = new Set(prev);
-      next.has(day) ? next.delete(day) : next.add(day);
-      return next;
-    });
-  };
-
-  const openSelect = (title: string, options: string[], onPick: (v: string) => void) =>
-    setSelectOpen({ title, options, onPick });
-
   const pickOption = (v: string) => {
     if (!selectOpen) return;
     selectOpen.onPick(v);
     setSelectOpen(null);
   };
+
+  /** ==================== Acciones helpers ==================== */
 
   const pickQR = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -113,9 +84,17 @@ export default function RegistroComplejoDeportivoScreen(
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1], // cuadrado
-      quality: 0.9,
+      // Comprimir para evitar 413 en backend y acelerar subidas
+      quality: 0.6,
+      base64: true, // Importante: obtener base64
     });
-    if (!result.canceled) setQrUri(result.assets[0].uri);
+    if (!result.canceled && result.assets[0].base64) {
+      // Detectar MIME y construir data URI correcta
+      const asset: any = result.assets[0];
+      const mime = asset?.mimeType || 'image/jpeg';
+      const base64Image = `data:${mime};base64,${asset.base64}`;
+      setQrUri(base64Image);
+    }
   };
   const removeQR = () => setQrUri(null);
 
@@ -165,23 +144,6 @@ export default function RegistroComplejoDeportivoScreen(
         return;
       }
 
-      // Extraer solo los números de los precios (ej: "40 Bs" -> 40)
-      const extractPrecio = (precio: string | null): number => {
-        if (!precio) return 0;
-        const match = precio.match(/\d+/);
-        return match ? parseFloat(match[0]) : 0;
-      };
-
-      const mapDias = {
-        lun: "LUNES",
-        mar: "MARTES",
-        mie: "MIERCOLES",
-        jue: "JUEVES",
-        vie: "VIERNES",
-        sab: "SABADO",
-        dom: "DOMINGO",
-      };
-
       // Mapeo para TipoCampo (superficie de la cancha en BD)
       const mapTipoCampo = {
         "Césped sintetico": "SINTETICO",
@@ -203,12 +165,8 @@ export default function RegistroComplejoDeportivoScreen(
         subalcaldia: subAlcaldia,
         celular: telefono,
         telefono,
-        diasDisponibles: Array.from(daysSelected).map((day) => mapDias[day]), // Mapear días al formato esperado
-        precioDiurnoPorHora: extractPrecio(precioDiurno),
-        precioNocturnoPorHora: extractPrecio(precioNocturno),
         observaciones,
         direccion: ubicacion || undefined,
-        qrUrl: qrUri || undefined,
         admin_id: adminId,
         canchas: canchas.map((cancha, index) => ({
           nombre: `Cancha ${index + 1}`,
@@ -219,94 +177,41 @@ export default function RegistroComplejoDeportivoScreen(
         })),
       };
 
+      // 1. Registrar el complejo
       const response = await ComplejosAPI.registrar(payload);
       console.log("Complejo registrado:", response);
 
-      // Crear horarios automáticamente para cada cancha del complejo
-      try {
-        const complejoId = response.id;
-        const canchasCreadas = response.canchas || [];
-
-        console.log("Creando horarios para", canchasCreadas.length, "canchas...");
-
-        // Mapear días de vuelta a dayKeys para el loop
-        const dayKeysMap: Record<string, number> = {
-          LUNES: 1,
-          MARTES: 2,
-          MIERCOLES: 3,
-          JUEVES: 4,
-          VIERNES: 5,
-          SABADO: 6,
-          DOMINGO: 0,
-        };
-
-        const diasDisponiblesSet = new Set(
-          Array.from(daysSelected).map((day) => {
-            const mapDias = {
-              lun: "LUNES",
-              mar: "MARTES",
-              mie: "MIERCOLES",
-              jue: "JUEVES",
-              vie: "VIERNES",
-              sab: "SABADO",
-              dom: "DOMINGO",
-            };
-            return mapDias[day];
-          })
-        );
-
-        // Para cada cancha, crear horarios
-        for (const cancha of canchasCreadas) {
-          const slots = [];
-          const today = new Date();
-
-          // Crear slots para los próximos 30 días empezando mañana
-          for (let dayOffset = 1; dayOffset <= 30; dayOffset++) {
-            const currentDate = new Date(today);
-            currentDate.setDate(today.getDate() + dayOffset);
-
-            const dayOfWeek = currentDate.getDay(); // 0 = domingo, 1 = lunes, ...
-            const dayNames = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
-            const dayName = dayNames[dayOfWeek];
-
-            // Solo crear horarios si este día está disponible
-            if (diasDisponiblesSet.has(dayName)) {
-              const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
-
-              // Crear slots por hora de 06:00 a 23:00
-              for (let hour = 6; hour < 23; hour++) {
-                const horaInicio = `${String(hour).padStart(2, "0")}:00:00`;
-                const horaFin = `${String(hour + 1).padStart(2, "0")}:00:00`;
-
-                slots.push({
-                  fecha: dateStr,
-                  hora_inicio: horaInicio,
-                  hora_fin: horaFin,
-                  disponible: true,
-                });
-              }
-            }
-          }
-
-          // Crear horarios en bulk para esta cancha
-          if (slots.length > 0) {
-            console.log(`Creando ${slots.length} horarios para cancha ${cancha.id}...`);
-            await HorariosAPI.crearBulk({
-              cancha_id: cancha.id,
-              slots,
-            });
-          }
+      // 2. Subir QR si existe
+      if (qrUri) {
+        try {
+          console.log("📤 Subiendo QR para complejo deportivo...");
+          const qrResponse = await QRsAPI.subir({
+            imagen_qr: qrUri,
+            vigente: true,
+          });
+          console.log("✅ QR subido correctamente:", qrResponse);
+        } catch (qrError: any) {
+          console.error("❌ Error al subir QR:", qrError);
+          console.error("📦 Detalles del error:", {
+            message: qrError.message,
+            response: qrError.response?.data,
+            status: qrError.response?.status,
+          });
+          // No bloqueamos el registro si falla el QR
+          Alert.alert(
+            "Advertencia",
+            `El complejo se registró pero hubo un problema al subir el QR: ${qrError.response?.data?.message || qrError.message}. Puedes subir el QR más tarde desde la configuración.`
+          );
         }
-
-        console.log("✅ Horarios creados exitosamente");
-      } catch (horarioError: any) {
-        console.error("⚠️ Error al crear horarios (complejo registrado pero sin horarios):", horarioError);
-        // No bloqueamos el flujo, el complejo ya fue creado
+      } else {
+        console.log("⚠️ No se proporcionó QR para el complejo");
       }
 
-      Alert.alert("Éxito", "Complejo registrado correctamente con horarios disponibles", [
-        { text: "OK", onPress: () => navigation.goBack() }
-      ]);
+      Alert.alert(
+        "¡Éxito!",
+        "El complejo ha sido registrado correctamente. Ahora puedes configurar los horarios y precios de cada cancha en la pantalla de edición.",
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
     } catch (error: any) {
       console.error("Error al registrar complejo:", error);
       const mensaje = error?.response?.data?.message || error?.message || "No se pudo registrar el complejo";
@@ -317,10 +222,6 @@ export default function RegistroComplejoDeportivoScreen(
   const onSubmit = () => {
     if (!otb || !subAlcaldia || !telefono || !nombreComplejo) {
       Alert.alert("Registro", "Completa OTB, SubAlcaldía, Celular y Nombre del complejo.");
-      return;
-    }
-    if (!precioDiurno || !precioNocturno) {
-      Alert.alert("Registro", "Selecciona los precios diurno y nocturno.");
       return;
     }
     if (!canchas.length) {
@@ -357,41 +258,6 @@ export default function RegistroComplejoDeportivoScreen(
 
           <Labeled label="Nombre del complejo deportivo">
             <Input placeholder="" value={nombreComplejo} onChangeText={setNombreComplejo} />
-          </Labeled>
-
-          {/* Días disponibles (chips) */}
-          <Text style={styles.groupTitle}>Seleccione días disponibles</Text>
-          <View style={styles.daysRow}>
-            {DAYS.map(({ key, label }) => {
-              const active = daysSelected.has(key);
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.dayChip, active && styles.dayChipActive]}
-                  onPress={() => toggleDay(key)}
-                  activeOpacity={0.9}
-                >
-                  <Text style={[styles.dayChipText, active && styles.dayChipTextActive]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Precios */}
-          <Labeled label="Precio Diurno por hora">
-            <Select
-              value={precioDiurno}
-              placeholder="Seleccione precio diurno"
-              onPress={() => openSelect("Precio diurno", PRECIOS, setPrecioDiurno)}
-            />
-          </Labeled>
-
-          <Labeled label="Precio Nocturno por hora">
-            <Select
-              value={precioNocturno}
-              placeholder="Seleccione precio nocturno"
-              onPress={() => openSelect("Precio nocturno", PRECIOS, setPrecioNocturno)}
-            />
           </Labeled>
 
           {/* Canchas del complejo */}

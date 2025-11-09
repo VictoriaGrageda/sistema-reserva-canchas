@@ -172,6 +172,8 @@ export const QRsRepo = {
    * @param cancha_id - ID de la cancha
    */
   async obtenerVigentePorCancha(cancha_id: string) {
+    console.log('🔍 Buscando QR para cancha:', cancha_id);
+
     const cancha = await prisma.canchas.findUnique({
       where: { id: cancha_id },
       include: {
@@ -201,18 +203,41 @@ export const QRsRepo = {
     });
 
     if (!cancha) {
+      console.log('❌ Cancha no encontrada:', cancha_id);
       return null;
     }
 
+    console.log('📦 Cancha encontrada:', {
+      id: cancha.id,
+      nombre: cancha.nombre,
+      complejo_id: cancha.complejo_id,
+      admin_id: cancha.admin_id,
+      tieneComplejo: !!cancha.complejo,
+      tieneAdmin: !!cancha.admin,
+    });
+
     // Prioridad: primero complejo, luego admin directo
     if (cancha.complejo) {
-      return cancha.complejo.admin.qrs_admin[0] || null;
+      const qr = cancha.complejo.admin.qrs_admin[0] || null;
+      console.log('📍 Buscando QR en complejo:', {
+        admin_id: cancha.complejo.admin_id,
+        qrsCount: cancha.complejo.admin.qrs_admin.length,
+        qrEncontrado: !!qr,
+      });
+      return qr;
     }
 
     if (cancha.admin) {
-      return cancha.admin.qrs_admin[0] || null;
+      const qr = cancha.admin.qrs_admin[0] || null;
+      console.log('📍 Buscando QR en admin directo:', {
+        admin_id: cancha.admin_id,
+        qrsCount: cancha.admin.qrs_admin.length,
+        qrEncontrado: !!qr,
+      });
+      return qr;
     }
 
+    console.log('❌ No se encontró admin (ni complejo ni directo)');
     return null;
   },
 };

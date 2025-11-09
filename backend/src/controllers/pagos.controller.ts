@@ -23,21 +23,27 @@ const serializePago = (pago: any) => {
 };
 
 /**
- * Verificar rol de administrador (con fallback a BD si el token no tiene rol)
+ * Verificar rol de administrador (siempre consulta BD para asegurar rol actualizado)
  */
 const verificarRolAdmin = async (req: AuthedRequest): Promise<boolean> => {
-  let rolUsuario = req.user?.rol;
+  if (!req.user?.id) {
+    return false;
+  }
 
-  if (!rolUsuario && req.user?.id) {
-    const { prisma } = await import('../generated/prisma');
+  // Siempre consultar la BD para obtener el rol actualizado
+  const { PrismaClient } = await import('../generated/prisma');
+  const prisma = new PrismaClient();
+
+  try {
     const usuario = await prisma.usuarios.findUnique({
       where: { id: req.user.id },
       select: { rol: true }
     });
-    rolUsuario = usuario?.rol;
-  }
 
-  return rolUsuario === 'administrador';
+    return usuario?.rol === 'administrador';
+  } finally {
+    await prisma.$disconnect();
+  }
 };
 
 export const PagosController = {
@@ -80,10 +86,18 @@ export const PagosController = {
 
       const result = await PagosService.obtenerQRParaPago(reserva_id);
 
+      // Calcular el monto total de la reserva
+      const montoTotal = result.pago.reserva.items.reduce((sum: number, item: any) => {
+        return sum + Number(item.precio || 0);
+      }, 0);
+
       return res.json({
         data: {
           pago: serializePago(result.pago),
-          qr: result.qr,
+          qr: result.qr ? {
+            ...result.qr,
+            monto: montoTotal,
+          } : null,
         },
       });
     } catch (error: any) {

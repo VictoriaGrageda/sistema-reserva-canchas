@@ -65,13 +65,25 @@ export const CanchasController = {
       const data: any = {};
       if (d.nombre != null) data.nombre = d.nombre;
       if (d.tipoCancha != null) data.tipoCancha = d.tipoCancha; // debe ser del enum
+      if (d.tipoCampo != null) data.tipoCampo = d.tipoCampo; // SINTETICO|TIERRA|CESPED
       if (d.activo != null) data.activo = !!d.activo;
 
+      // Precios
       if (d.precioDiurnoPorHora != null) {
         data.precioDiurnoPorHora = new Prisma.Decimal(d.precioDiurnoPorHora);
       }
       if (d.precioNocturnoPorHora != null) {
         data.precioNocturnoPorHora = new Prisma.Decimal(d.precioNocturnoPorHora);
+      }
+
+      // Días disponibles (para configuración de horarios)
+      if (d.diasDisponibles && Array.isArray(d.diasDisponibles)) {
+        data.diasDisponibles = d.diasDisponibles;
+      }
+
+      // Hora de corte para diurno/nocturno
+      if (d.horaCorte != null) {
+        data.horaCorte = d.horaCorte;
       }
 
       if (Object.keys(data).length === 0) {

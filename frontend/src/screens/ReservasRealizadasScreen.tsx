@@ -18,6 +18,7 @@ import Footer from "../components/Footer";
 import type { NavProps } from "../navigation/types";
 import { ReservasAPI } from "../api/reservas";
 import { PagosAPI } from "../api/pagos";
+import { formatearFechaCorta } from "../utils/fecha";
 
 interface Item {
   horario: {
@@ -51,6 +52,19 @@ export default function ReservasRealizadasScreen({
     visible: false,
     url: null,
   });
+
+  // Normaliza URIs de imagen: maneja base64 sin prefijo y fuerza https
+  const normalizeQrUri = (val?: string) => {
+    if (!val) return undefined as unknown as string;
+    if (val.startsWith('data:image/')) return val;
+    if (val.startsWith('http://')) return val.replace('http://', 'https://');
+    try {
+      if (/^[A-Za-z0-9+/=]+$/.test(val.slice(0, 40))) {
+        return `data:image/png;base64,${val}`;
+      }
+    } catch {}
+    return val;
+  };
 
   const cargarReservas = async () => {
     try {
@@ -207,11 +221,7 @@ export default function ReservasRealizadasScreen({
                     <View key={idx} style={styles.horarioItem}>
                       <Ionicons name="time-outline" size={16} color={colors.green} />
                       <Text style={styles.horarioText}>
-                        {new Date(item.horario.fecha).toLocaleDateString("es-ES", {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                        })}{" "}
+                        {formatearFechaCorta(item.horario.fecha)}{" "}
                         • {item.horario.hora_inicio.substring(0, 5)} - {item.horario.hora_fin.substring(0, 5)}
                       </Text>
                       <Text style={styles.precioItem}>{item.precio} Bs</Text>
@@ -279,7 +289,7 @@ export default function ReservasRealizadasScreen({
           <View style={styles.qrModalCard}>
             <Text style={styles.qrModalTitle}>Código QR para Pago</Text>
             {qrModal.url && (
-              <Image source={{ uri: qrModal.url }} style={styles.qrImage} resizeMode="contain" />
+              <Image source={{ uri: normalizeQrUri(qrModal.url) }} style={styles.qrImage} resizeMode="contain" />
             )}
             <TouchableOpacity
               style={styles.closeModalBtn}

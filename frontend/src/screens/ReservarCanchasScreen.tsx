@@ -19,6 +19,7 @@ import type { NavProps } from "../navigation/types";
 import { ComplejosAPI } from "../api/complejos";
 import { CanchasAPI } from "../api/canchas";
 import { ReservasAPI } from "../api/reservas";
+import { parseFechaLocal, formatearFechaCompleta } from "../utils/fecha";
 
 type Complejo = {
   id: string;
@@ -59,7 +60,7 @@ type Horario = {
   precioBs: number;
 };
 
-export default function ReservarCanchasScreen({ navigation }: NavProps<"ReservarCanchas">) {
+export default function ReservarCanchasScreen({ navigation, route }: NavProps<"ReservarCanchas">) {
   const [ciudad, setCiudad] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -81,9 +82,20 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
     return manana.toISOString().split("T")[0];
   };
 
+  // Fecha máxima: 30 días desde hoy
+  const getFechaMaxima = () => {
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 30);
+    return maxDate.toISOString().split("T")[0];
+  };
+
   const [fecha, setFecha] = useState(() => getFechaMinima());
+  const [mostrarSelectorFecha, setMostrarSelectorFecha] = useState(false);
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [horariosSeleccionados, setHorariosSeleccionados] = useState<Set<string>>(new Set());
+
+  // Tipo de reserva: 'diaria' | 'mensual' | 'recurrente'
+  const [tipoReserva, setTipoReserva] = useState<'diaria' | 'mensual' | 'recurrente'>('diaria');
 
   const buscar = async () => {
     setLoading(true);
@@ -131,20 +143,16 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
     }
   };
 
-  const seleccionarCancha = async (cancha: Cancha | CanchaIndividual) => {
-    setCanchaSeleccionada(cancha);
-    setHorarios([]);
-    setHorariosSeleccionados(new Set());
-
+  const cargarHorarios = async (cancha: Cancha | CanchaIndividual, fechaParam: string) => {
     setLoading(true);
     try {
       console.log("🔍 Buscando horarios para:", {
         cancha_id: cancha.id,
         cancha_nombre: cancha.nombre,
-        fecha: fecha,
+        fecha: fechaParam,
       });
 
-      const response = await CanchasAPI.disponibilidad(cancha.id, fecha);
+      const response = await CanchasAPI.disponibilidad(cancha.id, fechaParam);
       console.log("📦 Respuesta del backend:", response);
 
       // El backend devuelve { cancha_id, fecha, slots: [...] }
@@ -171,13 +179,26 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
     }
   };
 
-  const seleccionarCanchaIndividual = async (cancha: CanchaIndividual) => {
-    // Para canchas individuales, vamos directamente a la selección de horarios
-    // sin pasar por la vista de complejos
-    setComplejoSeleccionado(null);
-    setCanchas([]);
-    await seleccionarCancha(cancha);
+  const seleccionarCancha = async (cancha: Cancha | CanchaIndividual) => {
+    const canchaInfo = { id: cancha.id, nombre: cancha.nombre, tipoCancha: cancha.tipoCancha, tipoCampo: cancha.tipoCampo };
+    const complejoInfo = complejoSeleccionado ? { id: complejoSeleccionado.id, nombre: complejoSeleccionado.nombre } : undefined;
+    navigation.navigate('TipoReserva', { cancha: canchaInfo, complejo: complejoInfo });
   };
+
+  const cambiarFecha = async (nuevaFecha: string) => {
+    setFecha(nuevaFecha);
+    setHorariosSeleccionados(new Set());
+    if (canchaSeleccionada) {
+      await cargarHorarios(canchaSeleccionada, nuevaFecha);
+    }
+  };
+
+  const seleccionarCanchaIndividual = async (cancha: CanchaIndividual) => {
+  // Ir primero a selecci�n de tipo
+  setComplejoSeleccionado(null);
+  setCanchas([]);
+  await seleccionarCancha(cancha);
+};
 
   const toggleHorario = (horarioId: string) => {
     const newSet = new Set(horariosSeleccionados);
@@ -190,7 +211,7 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
   };
 
   const irAConfirmarReserva = () => {
-    if (horariosSeleccionados.size === 0) {
+    if (tipoReserva === 'diaria' && horariosSeleccionados.size === 0) {
       Alert.alert("Reserva", "Selecciona al menos un horario.");
       return;
     }
@@ -235,8 +256,21 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
       cancha: canchaInfo,
       complejo: complejoInfo,
       horarios: horariosConInfo,
+      tipoReserva: tipoReserva,
     });
   };
+  // Preselecci�n desde pantalla TipoReserva
+  React.useEffect(() => {
+    const p: any = route.params;
+    if (p?.cancha) {
+      const c = p.cancha;
+      setCanchaSeleccionada(c as any);
+      if (p.tipoReserva) setTipoReserva(p.tipoReserva as any);
+      setHorarios([]);
+      setHorariosSeleccionados(new Set());
+      cargarHorarios(c as any, fecha);
+    }
+  }, [route.params?.cancha?.id]);
 
   const volver = () => {
     if (canchaSeleccionada) {
@@ -434,20 +468,22 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
           <View>
             <Text style={styles.resultTitle}>{canchaSeleccionada.nombre}</Text>
 
-            {/* Información de fecha fija */}
-            <View style={styles.fechaInfo}>
-              <Ionicons name="calendar" size={18} color={colors.green} />
-              <Text style={styles.fechaInfoText}>
-                Fecha de reserva:{" "}
-                <Text style={styles.fechaInfoDate}>
-                  {new Date(fecha).toLocaleDateString("es-ES", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </Text>
-              </Text>
+            {/* Selector de fecha */}
+            <View style={{ gap: 8, marginBottom: 16 }}>
+              <Text style={styles.label}>Selecciona la fecha de tu reserva</Text>
+              <TouchableOpacity
+                style={styles.fechaSelector}
+                onPress={() => setMostrarSelectorFecha(true)}
+                activeOpacity={0.9}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Ionicons name="calendar" size={20} color={colors.green} />
+                  <Text style={styles.fechaSelectorText}>
+                    {formatearFechaCompleta(fecha)}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-down" size={20} color={colors.dark} />
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.horariosTitle}>Horarios Disponibles</Text>
@@ -490,18 +526,22 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
                   );
                 })}
 
+                
+
                 {/* Botón de continuar */}
                 <TouchableOpacity
                   style={[
                     styles.reservarBtn,
-                    horariosSeleccionados.size === 0 && { opacity: 0.5 },
+                    (tipoReserva === 'diaria' && horariosSeleccionados.size === 0) && { opacity: 0.5 },
                   ]}
                   onPress={irAConfirmarReserva}
-                  disabled={horariosSeleccionados.size === 0}
+                  disabled={tipoReserva === 'diaria' ? (horariosSeleccionados.size === 0) : false}
                   activeOpacity={0.85}
                 >
                   <Text style={styles.reservarText}>
-                    CONTINUAR ({horariosSeleccionados.size} horarios)
+                    {tipoReserva === 'mensual'
+                      ? `CONTINUAR${horariosSeleccionados.size > 0 ? ` (${horariosSeleccionados.size} horarios)` : ''}`
+                      : `CONTINUAR (${horariosSeleccionados.size} horarios)`}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -511,6 +551,67 @@ export default function ReservarCanchasScreen({ navigation }: NavProps<"Reservar
           </View>
         )}
       </ScrollView>
+
+      {/* Modal Selector de Fecha */}
+      <Modal
+        visible={mostrarSelectorFecha}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMostrarSelectorFecha(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setMostrarSelectorFecha(false)} />
+        <View style={styles.dateModalCard}>
+          <Text style={styles.dateModalTitle}>{tipoReserva === 'mensual' ? 'Selecciona una fecha (vista previa)' : 'Selecciona una fecha'}</Text>
+          <Text style={styles.dateModalSubtitle}>
+            {tipoReserva === 'mensual'
+              ? 'Vista previa de horarios. Podrás personalizar días/horas mensuales en el siguiente paso.'
+              : 'Puedes reservar desde mañana hasta 30 días después'}
+          </Text>
+
+          <ScrollView style={{ maxHeight: 400 }}>
+            {Array.from({ length: 30 }, (_, i) => {
+              const hoy = new Date();
+              const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i + 1);
+              const dateStr = d.toISOString().split("T")[0];
+              const isSelected = dateStr === fecha;
+
+              const fechaFormateada = formatearFechaCompleta(d);
+              const [diaSemana, ...resto] = fechaFormateada.split(', ');
+              const fechaSinDia = resto.join(', ');
+
+              return (
+                <TouchableOpacity
+                  key={dateStr}
+                  style={[styles.dateOption, isSelected && styles.dateOptionSelected]}
+                  onPress={() => {
+                    cambiarFecha(dateStr);
+                    setMostrarSelectorFecha(false);
+                  }}
+                  activeOpacity={0.9}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.dateOptionDay, isSelected && styles.dateOptionTextSelected]}>
+                      {diaSemana}
+                    </Text>
+                    <Text style={[styles.dateOptionDate, isSelected && styles.dateOptionTextSelected]}>
+                      {fechaSinDia}
+                    </Text>
+                  </View>
+                  {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.green} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <TouchableOpacity
+            style={styles.dateModalClose}
+            onPress={() => setMostrarSelectorFecha(false)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.dateModalCloseText}>CERRAR</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -756,4 +857,169 @@ const styles = StyleSheet.create({
     color: "#FFA500",
     fontWeight: "700",
   },
+
+  // Selector de fecha
+  fechaSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: colors.green,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  fechaSelectorText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.dark,
+    textTransform: "capitalize",
+    flex: 1,
+  },
+
+  // Modal de selector de fecha
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  dateModalCard: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    top: "15%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    maxHeight: "70%",
+  },
+  dateModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: colors.dark,
+    marginBottom: 4,
+  },
+  dateModalSubtitle: {
+    fontSize: 13,
+    color: colors.dark,
+    opacity: 0.7,
+    marginBottom: 16,
+  },
+  dateOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F7FAF8",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  dateOptionSelected: {
+    backgroundColor: "#E7F6EE",
+    borderColor: colors.green,
+  },
+  dateOptionDay: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.dark,
+    textTransform: "capitalize",
+  },
+  dateOptionDate: {
+    fontSize: 13,
+    color: colors.dark,
+    opacity: 0.7,
+    marginTop: 2,
+    textTransform: "capitalize",
+  },
+  dateOptionTextSelected: {
+    color: colors.green,
+    opacity: 1,
+  },
+  // Tipo de Reserva
+  tipoReservaSection: {
+    marginTop: 16,
+    marginBottom: 12,
+    gap: 12,
+  },
+  tipoReservaTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.dark,
+  },
+  tipoReservaOptions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  tipoReservaBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E6F1E9",
+  },
+  tipoReservaBtnActive: {
+    backgroundColor: colors.green,
+    borderColor: colors.green,
+  },
+  tipoReservaText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.dark,
+  },
+  tipoReservaTextActive: {
+    color: "#fff",
+  },
+  infoBox: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "flex-start",
+    backgroundColor: "#FFF8E1",
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FFE082",
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 11,
+    color: colors.dark,
+    opacity: 0.8,
+    lineHeight: 15,
+  },
+
+  dateModalClose: {
+    marginTop: 12,
+    height: 44,
+    backgroundColor: colors.green,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 2,
+  },
+  dateModalCloseText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
 });
+
+
+
+

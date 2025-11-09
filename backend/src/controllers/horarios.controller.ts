@@ -38,4 +38,47 @@ export const HorariosController = {
       return res.status(400).json({ message: e.message });
     }
   },
+
+  // 🆕 Generar bloques automáticos
+  async generarBloques(req: Request, res: Response) {
+    try {
+      const result = await HorariosService.generarBloquesAutomaticos(req.body);
+      return res.status(201).json(result);
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+  },
+
+  // 🆕 Guardar configuraciones
+  async guardarConfiguraciones(req: Request, res: Response) {
+    try {
+      const { cancha_id } = req.params;
+      const { configuraciones } = req.body;
+      const result = await HorariosService.guardarConfiguraciones(cancha_id, configuraciones);
+      return res.status(201).json(result);
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+  },
+
+  // 🆕 Obtener configuraciones
+  async obtenerConfiguraciones(req: Request, res: Response) {
+    try {
+      const { cancha_id } = req.params;
+      const result = await HorariosService.obtenerConfiguraciones(cancha_id);
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+  },
+
+  // 🆕 Cambiar disponibilidad (mantenimiento/eventos)
+  async cambiarDisponibilidad(req: Request, res: Response) {
+    try {
+      const result = await HorariosService.cambiarDisponibilidad(req.body);
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
+    }
+  },
 }

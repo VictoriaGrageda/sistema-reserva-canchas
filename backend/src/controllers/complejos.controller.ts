@@ -9,12 +9,9 @@ export const ComplejosController = {
     try {
       const d = req.body;
 
-      //  Validaciones mínimas (básicas)
+      //  Validaciones mínimas (solo campos básicos obligatorios)
       if (!d.nombre || !d.otb || !d.subalcaldia || !d.celular) {
         return res.status(400).json({ message: 'Faltan campos obligatorios' });
-      }
-      if (!Array.isArray(d.diasDisponibles) || d.diasDisponibles.length === 0) {
-        return res.status(400).json({ message: 'diasDisponibles debe tener al menos 1 día' });
       }
 
       // 🏟️ Si vienen canchas desde el front, mapear para crear anidadamente
@@ -25,21 +22,18 @@ export const ComplejosController = {
             nombre: c.nombre ?? `Cancha ${i + 1}`,
             tipoCancha: c.tipoCancha,    // FUT5|FUT6|FUT8|FUT11
             tipoCampo:  c.tipoCampo,     // SINTETICO|TIERRA|CESPED
-            // Precios específicos de la cancha NO se envían aquí -> heredan del complejo
+            // Precios y horarios se configurarán después en la edición
           })),
         };
       }
 
       //  Construir objeto para Prisma
-      const data = {
+      const data: any = {
         nombre: d.nombre,
         otb: d.otb,
         subalcaldia: d.subalcaldia,
         celular: d.celular,
         telefono: d.telefono ?? null,
-        diasDisponibles: d.diasDisponibles,
-        precioDiurnoPorHora: new Prisma.Decimal(d.precioDiurnoPorHora),
-        precioNocturnoPorHora: new Prisma.Decimal(d.precioNocturnoPorHora),
         direccion: d.direccion ?? null,
         ciudad: d.ciudad ?? null,
         lat: d.lat != null ? new Prisma.Decimal(d.lat) : null,
@@ -50,6 +44,17 @@ export const ComplejosController = {
         admin_id: d.admin_id,
         canchas: canchasCreate,
       };
+
+      // Campos opcionales que se configuran en edición
+      if (d.diasDisponibles && Array.isArray(d.diasDisponibles)) {
+        data.diasDisponibles = d.diasDisponibles;
+      }
+      if (d.precioDiurnoPorHora != null) {
+        data.precioDiurnoPorHora = new Prisma.Decimal(d.precioDiurnoPorHora);
+      }
+      if (d.precioNocturnoPorHora != null) {
+        data.precioNocturnoPorHora = new Prisma.Decimal(d.precioNocturnoPorHora);
+      }
 
       //  Crear complejo
       const creado = await ComplejosService.crear(data);

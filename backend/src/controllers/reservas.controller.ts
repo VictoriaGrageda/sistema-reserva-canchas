@@ -186,4 +186,54 @@ export const ReservasController = {
       return res.status(error.status || 400).json({ message: error.message });
     }
   },
+
+  /**
+   * 🆕 POST /api/v1/reservas/mensual
+   * Crear una reserva mensual
+   */
+  async crearMensual(req: AuthedRequest, res: Response, next: NextFunction) {
+    try {
+      const usuario_id = req.user?.id;
+      if (!usuario_id) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+
+      const reserva = await ReservasService.crearMensual(usuario_id, req.body);
+      return res.status(201).json({ data: serializeReserva(reserva) });
+    } catch (error: any) {
+      return res.status(error.status || 400).json({ message: error.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/reservas/mensual/preview
+   * Previsualizar slots y total para una reserva mensual
+   */
+  async previewMensual(req: AuthedRequest, res: Response, next: NextFunction) {
+    try {
+      // No requiere datos del usuario, solo parámetros
+      const preview = await ReservasService.previewMensual(req.body);
+      return res.json({ data: preview });
+    } catch (error: any) {
+      return res.status(error.status || 400).json({ message: error.message });
+    }
+  },
+
+  /**
+   * 🆕 POST /api/v1/reservas/recurrente
+   * Crear una reserva recurrente
+   */
+  async crearRecurrente(req: AuthedRequest, res: Response, next: NextFunction) {
+    try {
+      const usuario_id = req.user?.id;
+      if (!usuario_id) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+
+      const reserva = await ReservasService.crearRecurrente(usuario_id, req.body);
+      return res.status(201).json({ data: serializeReserva(reserva) });
+    } catch (error: any) {
+      return res.status(error.status || 400).json({ message: error.message });
+    }
+  },
 };

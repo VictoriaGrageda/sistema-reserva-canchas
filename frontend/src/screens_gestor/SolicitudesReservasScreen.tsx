@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../theme/colors";
@@ -22,6 +23,7 @@ interface Pago {
   id: string;
   monto_total: number;
   estado: EstadoPago;
+  comprobante?: string; // Imagen del comprobante en base64
   created_at: string;
   reserva: {
     id: string;
@@ -216,6 +218,11 @@ export default function SolicitudesReservasScreen({
           pagos.map((pago) => {
             const badge = getEstadoBadge(pago.estado);
             const primeraCancha = pago.reserva.items[0]?.horario.cancha;
+            // Calcular total si no viene desde backend
+            const totalCalculado =
+              typeof pago.monto_total === 'number' && !Number.isNaN(pago.monto_total)
+                ? pago.monto_total
+                : pago.reserva.items.reduce((sum, it) => sum + (it.precio || 0), 0);
 
             return (
               <View key={pago.id} style={styles.card}>
@@ -267,8 +274,27 @@ export default function SolicitudesReservasScreen({
                 {/* Total */}
                 <View style={styles.totalSection}>
                   <Text style={styles.totalLabel}>Monto Total:</Text>
-                  <Text style={styles.totalAmount}>{pago.monto_total} Bs</Text>
+                  <Text style={styles.totalAmount}>{totalCalculado} Bs</Text>
                 </View>
+
+                {/* Comprobante */}
+                {pago.comprobante ? (
+                  <View style={styles.comprobanteSection}>
+                    <Text style={styles.sectionTitle}>Comprobante de Pago:</Text>
+                    <Image
+                      source={{ uri: pago.comprobante }}
+                      style={styles.comprobanteImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.sinComprobanteSection}>
+                    <Ionicons name="document-outline" size={20} color="#999" />
+                    <Text style={styles.sinComprobanteText}>
+                      Sin comprobante - El cliente aún no ha subido el comprobante
+                    </Text>
+                  </View>
+                )}
 
                 {/* Acciones (solo si está pendiente) */}
                 {pago.estado === "pendiente" && (
@@ -540,6 +566,36 @@ const styles = StyleSheet.create({
     color: colors.dark,
     opacity: 0.5,
     textAlign: "right",
+  },
+
+  // Comprobante
+  comprobanteSection: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  comprobanteImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+    marginTop: 8,
+  },
+  sinComprobanteSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  sinComprobanteText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#999",
+    fontStyle: "italic",
   },
 
   // Empty state
