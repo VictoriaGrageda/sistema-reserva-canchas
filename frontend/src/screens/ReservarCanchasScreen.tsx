@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Modal,
   Pressable,
   Alert,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +19,8 @@ import { ComplejosAPI } from "../api/complejos";
 import { CanchasAPI } from "../api/canchas";
 import { ReservasAPI } from "../api/reservas";
 import { parseFechaLocal, formatearFechaCompleta } from "../utils/fecha";
+import MapLocationPicker, { LocationSelection, ViewerMarker } from "../components/MapLocationPicker";
+import { LocationIQService } from "../services/locationiq";
 
 type Complejo = {
   id: string;
@@ -28,6 +29,8 @@ type Complejo = {
   direccion?: string;
   precioDiurnoPorHora: number;
   precioNocturnoPorHora: number;
+  lat?: number;
+  lng?: number;
 };
 
 type CanchaIndividual = {
@@ -43,6 +46,8 @@ type CanchaIndividual = {
     id: string;
     nombre: string;
   };
+  lat?: number;
+  lng?: number;
 };
 
 type Cancha = {
@@ -60,8 +65,16 @@ type Horario = {
   precioBs: number;
 };
 
+type SearchFilter = 'todo' | 'complejos' | 'canchas';
+
+type MapEntry = {
+  id: string;
+  kind: 'complejo' | 'cancha';
+  address: string;
+  label: string;
+};
+
 export default function ReservarCanchasScreen({ navigation, route }: NavProps<"ReservarCanchas">) {
-  const [ciudad, setCiudad] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Resultados de búsqueda
@@ -96,14 +109,16 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
 
   // Tipo de reserva: 'diaria' | 'mensual' | 'recurrente'
   const [tipoReserva, setTipoReserva] = useState<'diaria' | 'mensual' | 'recurrente'>('diaria');
+  const [filtroTipo, setFiltroTipo] = useState<SearchFilter>('todo');
+  const [mapViewerVisible, setMapViewerVisible] = useState(false);
+  const [mapViewerLoading, setMapViewerLoading] = useState(false);
+const [mapViewerMarkers, setMapViewerMarkers] = useState<ViewerMarker[]>([]);
+  const [mapViewerError, setMapViewerError] = useState<string | null>(null);
 
   const buscar = async () => {
     setLoading(true);
     try {
-      // Parámetros de búsqueda
-      const params = ciudad.trim()
-        ? { ciudad: ciudad.trim(), nombre: ciudad.trim() }
-        : {};
+      const params = {};
 
       // Buscar tanto complejos como canchas individuales en paralelo
       const [complejosData, canchasData] = await Promise.all([
@@ -124,6 +139,10 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    buscar();
+  }, []);
 
   const seleccionarComplejo = async (complejo: Complejo) => {
     setComplejoSeleccionado(complejo);
@@ -194,7 +213,7 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
   };
 
   const seleccionarCanchaIndividual = async (cancha: CanchaIndividual) => {
-  // Ir primero a selecci�n de tipo
+  // Ir primero a selección de tipo
   setComplejoSeleccionado(null);
   setCanchas([]);
   await seleccionarCancha(cancha);
@@ -259,18 +278,35 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
       tipoReserva: tipoReserva,
     });
   };
-  // Preselecci�n desde pantalla TipoReserva
+  // Preselección desde pantalla TipoReserva
   React.useEffect(() => {
     const p: any = route.params;
-    if (p?.cancha) {
-      const c = p.cancha;
-      setCanchaSeleccionada(c as any);
-      if (p.tipoReserva) setTipoReserva(p.tipoReserva as any);
+    if (!p?.cancha) return;
+    const c = p.cancha as Cancha;
+    const cargarDetalles = async () => {
+      setLoading(true);
       setHorarios([]);
       setHorariosSeleccionados(new Set());
-      cargarHorarios(c as any, fecha);
-    }
+      try {
+        const detalle = await CanchasAPI.detalle(c.id);
+        const canchaCompleta = { ...c, ...detalle };
+        setCanchaSeleccionada(canchaCompleta as Cancha & CanchaIndividual);
+        await cargarHorarios(canchaCompleta as any, fecha);
+      } catch (error) {
+        console.error("Error al obtener detalles de cancha:", error);
+        setCanchaSeleccionada(c as Cancha & CanchaIndividual);
+        await cargarHorarios(c, fecha);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (p.tipoReserva) setTipoReserva(p.tipoReserva as any);
+    cargarDetalles();
   }, [route.params?.cancha?.id]);
+
+  React.useEffect(() => {
+    setMapViewerError(null);
+  }, [complejos, canchasIndividuales, filtroTipo]);
 
   const volver = () => {
     if (canchaSeleccionada) {
@@ -289,6 +325,85 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
     }
   };
 
+  const obtenerEntradasMapa = () => {
+    const entries: MapEntry[] = [];
+    if (filtroTipo !== 'canchas') {
+      complejos.forEach((complejo) => {
+        const address = complejo.direccion ?? complejo.ciudad;
+        if (address) {
+          entries.push({
+            id: complejo.id,
+            kind: 'complejo',
+            address,
+            label: complejo.nombre,
+          });
+        }
+      });
+    }
+    if (filtroTipo !== 'complejos') {
+      canchasIndividuales.forEach((cancha) => {
+        const address = cancha.direccion ?? cancha.ciudad;
+        if (address) {
+          entries.push({
+            id: cancha.id,
+            kind: 'cancha',
+            address,
+            label: cancha.nombre,
+          });
+        }
+      });
+    }
+    return entries;
+  };
+
+  const mostrarMapaResultados = async () => {
+    const entries = obtenerEntradasMapa().slice(0, 12);
+    if (!entries.length) {
+      setMapViewerError('No hay direcciones disponibles para mostrar en el mapa.');
+      return;
+    }
+    setMapViewerError(null);
+    setMapViewerLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        entries.map((entry) => LocationIQService.search(entry.address))
+      );
+      const markers = results
+        .map((res, index) => {
+          if (res.status !== "fulfilled") return null;
+          const entry = entries[index];
+          return {
+            id: entry.id,
+            kind: entry.kind,
+            label: entry.label,
+            location: res.value,
+          } as ViewerMarker;
+        })
+        .filter((marker): marker is ViewerMarker => Boolean(marker));
+      if (!markers.length) {
+        setMapViewerError('No se pudieron geolocalizar las ubicaciones.');
+        return;
+      }
+      setMapViewerMarkers(markers);
+      setMapViewerVisible(true);
+    } catch {
+      setMapViewerError('No se pudo cargar el mapa.');
+    } finally {
+      setMapViewerLoading(false);
+    }
+  };
+
+  const handleViewerMarkerPress = (marker: ViewerMarker) => {
+    setMapViewerVisible(false);
+    if (marker.kind === "complejo") {
+      const complejo = complejos.find((c) => c.id === marker.id);
+      if (complejo) seleccionarComplejo(complejo);
+    } else {
+      const cancha = canchasIndividuales.find((c) => c.id === marker.id);
+      if (cancha) seleccionarCanchaIndividual(cancha);
+    }
+  };
+
   const getTipoLabel = (tipo: string) => {
     const labels: Record<string, string> = {
       FUT5: "Fútbol 5",
@@ -301,6 +416,18 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
     };
     return labels[tipo] || tipo;
   };
+
+  const complejosCount = complejos.length;
+  const canchasCount = canchasIndividuales.length;
+  const mostrarComplejos = filtroTipo !== 'canchas' && complejosCount > 0;
+  const mostrarCanchas = filtroTipo !== 'complejos' && canchasCount > 0;
+  const hayResultados = mostrarComplejos || mostrarCanchas;
+  const resultTitleText =
+    filtroTipo === 'complejos'
+      ? 'Complejos Deportivos'
+      : filtroTipo === 'canchas'
+        ? 'Canchas individuales'
+        : 'Resultados';
 
   return (
     <View style={styles.screen}>
@@ -316,47 +443,65 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
           </TouchableOpacity>
         )}
 
-        {/* Vista: Búsqueda inicial */}
-        {!complejoSeleccionado && !canchaSeleccionada && complejos.length === 0 && canchasIndividuales.length === 0 && (
-          <View style={styles.filters}>
-            <Text style={styles.title}>Buscar Complejos Deportivos</Text>
-
-            <View style={{ gap: 6 }}>
-              <Text style={styles.label}>Buscar por ciudad o nombre (opcional)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ej: La Paz, Cochabamba, San Antonio..."
-                placeholderTextColor="#9AA1A5"
-                value={ciudad}
-                onChangeText={setCiudad}
-              />
-              <Text style={styles.hint}>Deja vacío para ver todos los complejos</Text>
+        {!complejoSeleccionado && !canchaSeleccionada && (
+          <View style={styles.heroCard}>
+            <Text style={styles.heroTitle}>Explora complejos y canchas individuales</Text>
+            <Text style={styles.heroSubtitle}>
+              Descubre espacios deportivos con horarios listos para reservar.
+            </Text>
+            <View style={styles.categoryRow}>
+              <TouchableOpacity
+                style={[
+                  styles.categoryCard,
+                  filtroTipo === "complejos" && styles.categoryCardActive,
+                ]}
+                onPress={() =>
+                  setFiltroTipo((prev) => (prev === "complejos" ? "todo" : "complejos"))
+                }
+                activeOpacity={0.85}
+              >
+                <Text style={styles.categoryCardLabel}>Complejos</Text>
+                <Text style={styles.categoryCardCount}>{complejos.length}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.categoryCard,
+                  filtroTipo === "canchas" && styles.categoryCardActive,
+                ]}
+                onPress={() =>
+                  setFiltroTipo((prev) => (prev === "canchas" ? "todo" : "canchas"))
+                }
+                activeOpacity={0.85}
+              >
+                <Text style={styles.categoryCardLabel}>Canchas individuales</Text>
+                <Text style={styles.categoryCardCount}>{canchasIndividuales.length}</Text>
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[styles.searchBtn, loading && { opacity: 0.6 }]}
-              onPress={buscar}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.searchText}>{ciudad.trim() ? "BUSCAR" : "VER TODOS"}</Text>
-              )}
-            </TouchableOpacity>
           </View>
         )}
 
         {/* Vista: Lista de resultados (complejos y canchas individuales) */}
-        {!complejoSeleccionado && !canchaSeleccionada && (complejos.length > 0 || canchasIndividuales.length > 0) && (
+        {!complejoSeleccionado && !canchaSeleccionada && hayResultados && (
           <View>
-            <Text style={styles.resultTitle}>
-              {ciudad.trim() ? `Resultados para "${ciudad}"` : "Resultados"}
-            </Text>
+            <View style={styles.resultHeader}>
+            <Text style={styles.resultTitle}>{resultTitleText}</Text>
+              <TouchableOpacity
+                style={[styles.mapBtn, (!hayResultados || mapViewerLoading) && { opacity: 0.6 }]}
+                onPress={mostrarMapaResultados}
+                disabled={!hayResultados || mapViewerLoading}
+                activeOpacity={0.85}
+              >
+                {mapViewerLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.mapBtnText}>Ver por mapa</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            {mapViewerError ? <Text style={styles.mapErrorText}>{mapViewerError}</Text> : null}
 
             {/* Sección: Complejos Deportivos */}
-            {complejos.length > 0 && (
+            {mostrarComplejos && (
               <View style={{ marginBottom: 20 }}>
                 <Text style={styles.sectionLabel}>Complejos Deportivos</Text>
                 {complejos.map((complejo) => (
@@ -392,7 +537,7 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
             )}
 
             {/* Sección: Canchas Individuales */}
-            {canchasIndividuales.length > 0 && (
+            {mostrarCanchas && (
               <View>
                 <Text style={styles.sectionLabel}>Canchas Individuales</Text>
                 {canchasIndividuales.map((cancha) => (
@@ -612,6 +757,14 @@ export default function ReservarCanchasScreen({ navigation, route }: NavProps<"R
           </TouchableOpacity>
         </View>
       </Modal>
+      <MapLocationPicker
+        visible={mapViewerVisible}
+        viewerMode
+        viewerMarkers={mapViewerMarkers}
+        onViewerMarkerPress={handleViewerMarkerPress}
+        onConfirm={() => setMapViewerVisible(false)}
+        onCancel={() => setMapViewerVisible(false)}
+      />
     </View>
   );
 }
@@ -659,6 +812,31 @@ const styles = StyleSheet.create({
     color: colors.dark,
     marginBottom: 6,
   },
+  resultHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 8,
+  },
+  mapBtn: {
+    backgroundColor: colors.green,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mapBtnText: {
+    color: "#fff",
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
+  mapErrorText: {
+    color: "#b00020",
+    fontSize: 12,
+    marginBottom: 10,
+  },
 
   subtitle: {
     fontSize: 14,
@@ -666,45 +844,63 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginBottom: 10,
   },
-
-  // filtros
-  filters: {
-    marginTop: 10,
-    gap: 12,
+  heroCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E6F1E9",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
-  label: {
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: "800",
     color: colors.dark,
-    fontSize: 13,
-    fontWeight: "700",
-    opacity: 0.9,
-    marginLeft: 2,
   },
-  input: {
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
+  heroSubtitle: {
     fontSize: 14,
     color: colors.dark,
-    borderWidth: 1.5,
+    opacity: 0.75,
+    marginVertical: 10,
+  },
+  categoryRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  categoryCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: "#E6F1E9",
-    elevation: 1,
+    backgroundColor: "#F7F9FF",
   },
-  searchBtn: {
-    alignSelf: "center",
-    marginTop: 2,
-    height: 40,
-    paddingHorizontal: 28,
-    backgroundColor: "#17D650",
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 2,
+  categoryCardActive: {
+    borderColor: colors.green,
+    backgroundColor: "#E6F8EF",
   },
-  searchText: {
-    color: "#fff",
+  categoryCardLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.dark,
+  },
+  categoryCardCount: {
+    fontSize: 24,
     fontWeight: "800",
-    letterSpacing: 0.3,
+    color: colors.green,
+    marginTop: 6,
+  },
+  hint: {
+    fontSize: 11,
+    color: colors.dark,
+    opacity: 0.6,
+    fontStyle: "italic",
+    marginTop: 4,
   },
 
   // Cards

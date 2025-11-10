@@ -20,6 +20,7 @@ import type { NavProps } from "../navigation/types";
 import Footer from "../components/FooterGestor";
 import { ComplejosAPI } from "../api/complejos";
 import { QRsAPI } from "../api/qrs";
+import MapLocationPicker, { type LocationSelection } from "../components/MapLocationPicker";
 import { useAuth } from "../context/AuthContext";
 
 /** ==================== Constantes básicas ==================== */
@@ -45,7 +46,8 @@ export default function RegistroComplejoDeportivoScreen(
   const [telefono, setTelefono] = useState("");
   const [nombreComplejo, setNombreComplejo] = useState("");
   const [observaciones, setObservaciones] = useState("");
-  const [ubicacion, setUbicacion] = useState<string | null>(null);
+  const [ubicacion, setUbicacion] = useState<LocationSelection | null>(null);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
 
 
   // Canchas del complejo
@@ -97,11 +99,6 @@ export default function RegistroComplejoDeportivoScreen(
     }
   };
   const removeQR = () => setQrUri(null);
-
-  const onSelectUbicacion = () => {
-    // TODO: Abrir un selector real de mapas
-    setUbicacion("Av. Ejemplo #123, Zona Centro");
-  };
 
   /** ===== Canchas ===== */
   const solicitarAgregarCancha = () =>
@@ -166,7 +163,9 @@ export default function RegistroComplejoDeportivoScreen(
         celular: telefono,
         telefono,
         observaciones,
-        direccion: ubicacion || undefined,
+        direccion: ubicacion?.address,
+        lat: ubicacion?.latitude,
+        lng: ubicacion?.longitude,
         admin_id: adminId,
         canchas: canchas.map((cancha, index) => ({
           nombre: `Cancha ${index + 1}`,
@@ -335,9 +334,9 @@ export default function RegistroComplejoDeportivoScreen(
           </View>
 
           {/* Ubicación */}
-          <TouchableOpacity style={styles.locationBtn} onPress={onSelectUbicacion} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.locationBtn} onPress={() => setLocationModalVisible(true)} activeOpacity={0.85}>
             <Ionicons name="location-outline" size={18} color={colors.dark} />
-            <Text style={styles.locationText}>{ubicacion ?? "Seleccione Ubicación"}</Text>
+            <Text style={styles.locationText}>{ubicacion?.address ?? "Seleccione Ubicación"}</Text>
           </TouchableOpacity>
 
           {/* Registrar */}
@@ -430,6 +429,15 @@ export default function RegistroComplejoDeportivoScreen(
           )}
         </View>
       </Modal>
+      <MapLocationPicker
+        visible={locationModalVisible}
+        initialLocation={ubicacion}
+        onConfirm={(loc) => {
+          setUbicacion(loc);
+          setLocationModalVisible(false);
+        }}
+        onCancel={() => setLocationModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

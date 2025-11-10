@@ -148,6 +148,46 @@ export default function SolicitudesReservasScreen({
     }
   };
 
+  const formatTime = (value?: string | number) => {
+    if (value == null) return "--:--";
+    if (typeof value === "string") {
+      const cleaned = value.replace(".", ":");
+      if (cleaned.includes(":")) {
+        const parts = cleaned.split(":").map((p) => p.padStart(2, "0"));
+        return `${parts[0]}:${parts[1] ?? "00"}`;
+      }
+      return cleaned;
+    }
+    if (typeof value === "number") {
+      const hours = Math.floor(value);
+      const minutes = Math.round((value - hours) * 60);
+      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    }
+    return "--:--";
+  };
+
+  const formatFecha = (fecha?: string) => {
+    if (!fecha) return "Fecha no disponible";
+    const date = new Date(fecha);
+    if (Number.isNaN(date.getTime())) return "Fecha no disponible";
+    return date.toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const formatHorarioLabel = (item: Pago["reserva"]["items"][number]) => {
+    const horario = item.horario;
+    if (!horario) return "Horario no disponible";
+    const fecha = formatFecha(horario.fecha);
+    const inicio = formatTime(horario.hora_inicio);
+    const fin = formatTime(horario.hora_fin);
+    const price = typeof item.precio === "number" ? `${item.precio.toLocaleString("es-BO")} Bs` : null;
+    return `${fecha} · ${inicio} - ${fin}${price ? ` · ${price}` : ""}`;
+  };
+
   if (loading) {
     return (
       <View style={styles.screen}>
@@ -255,22 +295,15 @@ export default function SolicitudesReservasScreen({
                   {pago.reserva.items.slice(0, 3).map((item, idx) => (
                     <View key={idx} style={styles.horarioItem}>
                       <Ionicons name="time-outline" size={14} color={colors.dark} />
-                      <Text style={styles.horarioText}>
-                        {new Date(item.horario.fecha).toLocaleDateString("es-ES", {
-                          day: "numeric",
-                          month: "short",
-                        })}{" "}
-                        • {item.horario.hora_inicio} - {item.horario.hora_fin}
-                      </Text>
+                      <Text style={styles.horarioText}>{formatHorarioLabel(item)}</Text>
                     </View>
                   ))}
                   {pago.reserva.items.length > 3 && (
                     <Text style={styles.moreText}>
-                      +{pago.reserva.items.length - 3} horarios más
+                      +{pago.reserva.items.length - 3} horarios m�s
                     </Text>
                   )}
                 </View>
-
                 {/* Total */}
                 <View style={styles.totalSection}>
                   <Text style={styles.totalLabel}>Monto Total:</Text>

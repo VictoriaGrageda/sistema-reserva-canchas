@@ -12,6 +12,7 @@ import {
   Pressable,
   Alert,
   Image,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker"; // imagen para subir (QR)
@@ -20,6 +21,7 @@ import type { NavProps } from "../navigation/types";
 import Footer from "../components/FooterGestor";
 import { CanchasAPI, type TipoCampo, type TipoCancha, type DiaSemana, type RegistrarCanchaPayload } from "../api/canchas";
 import { QRsAPI } from "../api/qrs";
+import MapLocationPicker, { type LocationSelection } from "../components/MapLocationPicker";
 
 /** ==================== Screen ==================== */
 export default function RegistroCanchas({ navigation }: NavProps<"RegistroCanchas">) {
@@ -27,7 +29,8 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
   const [otb, setOtb] = useState("");
   const [subAlcaldia, setSubAlcaldia] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [ubicacion, setUbicacion] = useState<string | null>(null);
+  const [ubicacion, setUbicacion] = useState<LocationSelection | null>(null);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
 
   // QR (imagen)
   const [qrUri, setQrUri] = useState<string | null>(null); // implementacion del qr para subir
@@ -57,11 +60,6 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
     if (!selectOpen) return;
     selectOpen.onPick(v);
     setSelectOpen(null);
-  };
-
-  const onSelectUbicacion = () => {
-    // Aquí podrías abrir un mapa o selector real
-    
   };
 
   // subir QR desde galería y convertir a base64
@@ -139,6 +137,9 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
         otb,
         subalcaldia: subAlcaldia,
         celular: telefono,
+        direccion: ubicacion?.address,
+        lat: ubicacion?.latitude,
+        lng: ubicacion?.longitude,
       };
 
       // 2. Registrar la cancha
@@ -193,16 +194,18 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
 
   return (
     <SafeAreaView style={styles.screen}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.green} />
       <Footer />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* TITULO  morado  */}
-        <View style={styles.headerChip}>
-          <Text style={styles.headerChipText}>REGISTRO DE CANCHA</Text>
+        <View style={styles.hero}>
+          <Text style={styles.heroTitle}>Registro de cancha</Text>
+          <Text style={styles.heroSubtitle}>
+            Completa los datos de la cancha, el QR y la ubicación para poder recibir reservas y habilitar cobros.
+          </Text>
         </View>
 
-        {/* Formulario */}
-        <View style={styles.form}>
+        <View style={styles.formCard}>
           <Labeled label="OTB de la cancha">
             <Input placeholder="Ingresa nombre de la otb" value={otb} onChangeText={setOtb} />
           </Labeled>
@@ -219,7 +222,7 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           <Labeled label="Tipo de campo deportivo">
             <Select
               value={tipoCampo}
-              placeholder="Seleccione tipo de campo de la cancha "
+              placeholder="Seleccione tipo de campo de la cancha"
               onPress={() => openSelect("Tipo de campo", tiposCampo, setTipoCampo)}
             />
           </Labeled>
@@ -227,13 +230,13 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           <Labeled label="Tipo de cancha deportiva">
             <Select
               value={tipoCancha}
-              placeholder="Seleccione el tipo de cancha "
+              placeholder="Seleccione el tipo de cancha"
               onPress={() => openSelect("Tipo de cancha", tiposCancha, setTipoCancha)}
             />
           </Labeled>
-          
-          {/* ====== subir QR  style====== */}
-          <Text style={styles.groupTitle}>Código QR para el cobro </Text>
+
+          {/* ====== subir QR ====== */}
+          <Text style={styles.groupTitle}>Código QR para el cobro</Text>
           <View style={styles.qrCard}>
             {qrUri ? (
               <>
@@ -253,17 +256,18 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
               <TouchableOpacity style={styles.qrUpload} onPress={pickQR} activeOpacity={0.9}>
                 <Ionicons name="qr-code-outline" size={28} color={colors.dark} />
                 <Text style={styles.qrUploadText}>Subir un QR</Text>
-                <Text style={styles.qrHint}>PNG / JPG (cuadrado recomendado).{"\n"}ASEGURATE QUE EL QR NO VENZA PRONTO</Text>
+                <Text style={styles.qrHint}>
+                  PNG / JPG (cuadrado recomendado).{"\n"}ASEGURATE QUE EL QR NO VENZA PRONTO
+                </Text>
               </TouchableOpacity>
             )}
           </View>
-          {/* ====== FIN de subir qr imagen ====== */}
-
+          {/* ====== FIN de subir qr ====== */}
 
           {/* Ubicación */}
-          <TouchableOpacity style={styles.locationBtn} onPress={onSelectUbicacion} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.locationBtn} onPress={() => setLocationModalVisible(true)} activeOpacity={0.85}>
             <Ionicons name="location-outline" size={18} color={colors.dark} />
-            <Text style={styles.locationText}>{ubicacion ?? "Seleccione Ubicación"}</Text>
+            <Text style={styles.locationText}>{ubicacion?.address ?? "Seleccione Ubicación"}</Text>
           </TouchableOpacity>
 
           {/* Submit */}
@@ -292,6 +296,15 @@ export default function RegistroCanchas({ navigation }: NavProps<"RegistroCancha
           </ScrollView>
         </View>
       </Modal>
+      <MapLocationPicker
+        visible={locationModalVisible}
+        initialLocation={ubicacion}
+        onConfirm={(loc) => {
+          setUbicacion(loc);
+          setLocationModalVisible(false);
+        }}
+        onCancel={() => setLocationModalVisible(false)}
+      />
 
     </SafeAreaView>
   );
@@ -338,32 +351,36 @@ function Select({
 
 /** ==================== Estilos ==================== */
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.yellow },
-  content: { padding: 20, gap: 12 },
+  screen: { flex: 1, backgroundColor: colors.lightGreen },
+  content: { padding: 20, gap: 16, paddingBottom: 32 },
 
-  headerChip: {
-    alignSelf: "center",
-    backgroundColor: colors.purple ?? "#B673C8",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 16,
-    marginTop: 4,
-    marginBottom: 6,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+  hero: { gap: 6, marginBottom: 4 },
+  heroTitle: { fontSize: 24, fontWeight: "800", color: colors.dark },
+  heroSubtitle: { fontSize: 14, color: colors.dark, opacity: 0.75, lineHeight: 20, maxWidth: "90%" },
+
+  formCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: "#E6F1E9",
+    ...Platform.select({
+      android: { elevation: 3 },
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 5 },
+      },
+    }),
   },
-  headerChipText: { color: "#fff", fontWeight: "800", letterSpacing: 0.3 },
-
-  form: { gap: 12 },
 
   label: { color: "#1B1B1B", fontSize: 13, fontWeight: "700", marginLeft: 2, opacity: 0.85 },
 
   input: {
-    height: 40,
-    borderRadius: 10,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
     fontSize: 14,
@@ -382,8 +399,8 @@ const styles = StyleSheet.create({
   },
 
   select: {
-    height: 40,
-    borderRadius: 10,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
     flexDirection: "row",
@@ -407,7 +424,7 @@ const styles = StyleSheet.create({
 
   // ===== tarjeta de subida QR =====
   qrCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FDFDFD",
     borderRadius: 16,
     padding: 14,
     gap: 12,
@@ -435,7 +452,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   qrUploadText: { fontWeight: "800", color: colors.dark },
-  qrHint: { fontSize: 12, opacity: 0.65, color: colors.dark, textAlign: 'center', },
+  qrHint: { fontSize: 12, opacity: 0.65, color: colors.dark, textAlign: "center" },
   qrPreview: {
     width: "100%",
     aspectRatio: 1,
@@ -460,28 +477,28 @@ const styles = StyleSheet.create({
 
   // Botón ubicación y submit
   locationBtn: {
-    height: 40,
-    borderRadius: 10,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#E6F1E9",
   },
   locationText: { color: colors.dark, fontSize: 14, fontWeight: "600" },
 
   submit: {
-    marginTop: 8,
-    height: 44,
+    marginTop: 6,
+    height: 46,
     borderRadius: 999,
-    backgroundColor: "#1BD65A",
+    backgroundColor: "#17D650",
     alignItems: "center",
     justifyContent: "center",
     elevation: 2,
   },
-  submitText: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  submitText: { color: "#fff", fontSize: 15, fontWeight: "800", letterSpacing: 0.3 },
 
   // Modales genéricos
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "#00000070" },
@@ -500,6 +517,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
   },
   modalTitle: { fontWeight: "800", fontSize: 16, marginBottom: 8, color: colors.dark },
-  optionRow: { paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E9ECEF" },
+  optionRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E9ECEF",
+  },
   optionText: { fontSize: 14, color: colors.dark },
 });
+
