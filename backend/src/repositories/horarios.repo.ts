@@ -1,4 +1,6 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
 type SlotInput = {
@@ -12,9 +14,11 @@ type SlotInput = {
 
 export const HorariosRepo = {
   /** Crear un solo slot (tu método existente) */
+  // Si prefieres tipar más estricto y tu modelo se llama "Horarios" en el schema,
+  // puedes cambiar `any` por `Prisma.HorariosCreateInput` o `Prisma.HorariosUncheckedCreateInput`.
   create: (data: any) => prisma.horarios.create({ data }),
 
-  /** Buscar solapamiento (tu método existente) 
+  /** Buscar solapamiento (tu método existente)
    *  Regla: start < existing.end && end > existing.start
    */
   findOverlap: (cancha_id: string, fecha: Date, ini: Date, fin: Date) =>
@@ -32,13 +36,13 @@ export const HorariosRepo = {
   /** Eliminar slot por id (tu método existente) */
   remove: (id: string) => prisma.horarios.delete({ where: { id } }),
 
-  /** ✅ NUEVO: crear varios slots en una sola transacción (bulk) 
+  /** ✅ NUEVO: crear varios slots en una sola transacción (bulk)
    * - Valida solapes para cada slot
    * - Si encuentra solape, aborta toda la transacción (no crea nada a medias)
    * - Devuelve array de IDs creados
    */
   createMany: async ({ cancha_id, slots }: { cancha_id: string; slots: SlotInput[] }) => {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const createdIds: string[] = [];
       for (const s of slots) {
         const fecha = new Date(s.fecha);

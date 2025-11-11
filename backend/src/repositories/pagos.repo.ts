@@ -1,4 +1,5 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client'; 
 const prisma = new PrismaClient();
 
 export const PagosRepo = {
@@ -146,7 +147,7 @@ export const PagosRepo = {
    * @param pago_id - ID del pago
    */
   async confirmar(pago_id: string) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Actualizar el pago
       const pago = await tx.pagos.update({
         where: { id: pago_id },
@@ -190,7 +191,7 @@ export const PagosRepo = {
    * @param pago_id - ID del pago
    */
   async rechazar(pago_id: string) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Actualizar el pago
       const pago = await tx.pagos.update({
         where: { id: pago_id },
@@ -217,11 +218,11 @@ export const PagosRepo = {
       });
 
       // Liberar los horarios
-      const horariosIds = pago.reserva.items.map((item) => item.horario_id);
+      const horariosIds = pago.reserva.items.map((item: { horario_id: string }) => item.horario_id     );
       await tx.horarios.updateMany({
         where: { id: { in: horariosIds } },
         data: { disponible: true },
-      });
+      }); 
 
       return pago;
     });

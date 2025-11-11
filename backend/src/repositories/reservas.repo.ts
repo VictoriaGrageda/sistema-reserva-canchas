@@ -1,6 +1,8 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 const prisma = new PrismaClient();
-
+type HorarioLite = { id: string; disponible: boolean; reserva_items: unknown[] };
+type ReservaItemLite = { horario_id: string };
 type HorarioItem = {
   horario_id: string;
   precio?: number;
@@ -23,7 +25,7 @@ export const ReservasRepo = {
       recurrencia_hora?: string;
     }
   ) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Validar que todos los horarios existan y estén disponibles
       const horariosIds = horarios.map((h) => h.horario_id);
       const horariosDB = await tx.horarios.findMany({
@@ -37,18 +39,18 @@ export const ReservasRepo = {
       }
 
       // Verificar que todos estén disponibles
-      const noDisponibles = horariosDB.filter((h) => !h.disponible);
+      const noDisponibles = horariosDB.filter((h: HorarioLite) => !h.disponible);
       if (noDisponibles.length > 0) {
         throw new Error(
-          `Los siguientes horarios no están disponibles: ${noDisponibles.map((h) => h.id).join(', ')}`
+          `Los siguientes horarios no están disponibles: ${noDisponibles.map((h: HorarioLite) => h.id).join(', ')}`
         );
       }
 
       // Verificar que ninguno tenga reserva_items (ya reservado)
-      const yaReservados = horariosDB.filter((h) => h.reserva_items.length > 0);
+      const yaReservados = horariosDB.filter((h: HorarioLite) => h.reserva_items.length > 0);
       if (yaReservados.length > 0) {
         throw new Error(
-          `Los siguientes horarios ya están reservados: ${yaReservados.map((h) => h.id).join(', ')}`
+          `Los siguientes horarios ya están reservados: ${yaReservados.map((h: HorarioLite) => h.id).join(', ')}`
         );
       }
 
@@ -201,7 +203,7 @@ export const ReservasRepo = {
    * Modificar una reserva (cambiar horarios) en transacción
    */
   async modificarHorarios(reserva_id: string, nuevosHorarios: HorarioItem[]) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Obtener la reserva actual
       const reserva = await tx.reservas.findUnique({
         where: { id: reserva_id },
@@ -217,7 +219,7 @@ export const ReservasRepo = {
       }
 
       // 2. Obtener horarios antiguos
-      const horariosAntiguosIds = reserva.items.map((item) => item.horario_id);
+      const horariosAntiguosIds = reserva.items.map((item: ReservaItemLite) => item.horario_id);
 
       // 3. Eliminar items antiguos
       await tx.reserva_items.deleteMany({
@@ -241,12 +243,12 @@ export const ReservasRepo = {
         throw new Error('Uno o más horarios no existen');
       }
 
-      const noDisponibles = horariosDB.filter((h) => !h.disponible);
+      const noDisponibles = horariosDB.filter((h: HorarioLite) => !h.disponible);
       if (noDisponibles.length > 0) {
         throw new Error('Uno o más horarios no están disponibles');
       }
 
-      const yaReservados = horariosDB.filter((h) => h.reserva_items.length > 0);
+      const yaReservados = horariosDB.filter((h: HorarioLite) => h.reserva_items.length > 0);
       if (yaReservados.length > 0) {
         throw new Error('Uno o más horarios ya están reservados');
       }
@@ -295,7 +297,7 @@ export const ReservasRepo = {
    * Cancelar una reserva (libera horarios y cambia estado)
    */
   async cancelar(reserva_id: string) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Obtener la reserva
       const reserva = await tx.reservas.findUnique({
         where: { id: reserva_id },
@@ -307,7 +309,7 @@ export const ReservasRepo = {
       }
 
       // 2. Obtener IDs de horarios a liberar
-      const horariosIds = reserva.items.map((item) => item.horario_id);
+      const horariosIds = reserva.items.map((item: ReservaItemLite) => item.horario_id);
 
       // 3. Liberar horarios
       await tx.horarios.updateMany({
@@ -355,7 +357,7 @@ export const ReservasRepo = {
    * Cambiar estado de una reserva (admin)
    */
   async cambiarEstado(reserva_id: string, estado: 'confirmada' | 'cancelada') {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const reserva = await tx.reservas.update({
         where: { id: reserva_id },
         data: { estado },
@@ -379,7 +381,7 @@ export const ReservasRepo = {
 
       // Si se cancela, liberar horarios
       if (estado === 'cancelada') {
-        const horariosIds = reserva.items.map((item) => item.horario_id);
+        const horariosIds = reserva.items.map((item: ReservaItemLite) => item.horario_id);
         await tx.horarios.updateMany({
           where: { id: { in: horariosIds } },
           data: { disponible: true },

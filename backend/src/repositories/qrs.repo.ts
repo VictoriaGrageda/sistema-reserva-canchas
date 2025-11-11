@@ -1,4 +1,5 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client'; 
 const prisma = new PrismaClient();
 
 export const QRsRepo = {
@@ -9,7 +10,7 @@ export const QRsRepo = {
    * @param vigente - Si es el QR activo (default: true)
    */
   async crear(admin_id: string, imagen_qr: string, vigente: boolean = true) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Si el nuevo QR será vigente, marcar los demás como no vigentes
       if (vigente) {
         await tx.qrs.updateMany({
@@ -79,7 +80,7 @@ export const QRsRepo = {
    * @param admin_id - ID del administrador (para validación)
    */
   async marcarComoVigente(id: string, admin_id: string) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Verificar que el QR pertenece al admin
       const qr = await tx.qrs.findUnique({ where: { id } });
       if (!qr || qr.admin_id !== admin_id) {
@@ -124,7 +125,7 @@ export const QRsRepo = {
    * @param admin_id - ID del administrador (para validación)
    */
   async eliminar(id: string, admin_id: string) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Verificar que el QR pertenece al admin
       const qr = await tx.qrs.findUnique({
         where: { id },

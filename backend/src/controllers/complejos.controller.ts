@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
-import { Prisma } from '../generated/prisma';
+import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { ComplejosService } from '../services/complejos.service';
 import { serializeComplejo } from '../utils/serialize';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 export const ComplejosController = {
   /** ===================== CREAR COMPLEJO ===================== */
@@ -36,8 +38,8 @@ export const ComplejosController = {
         telefono: d.telefono ?? null,
         direccion: d.direccion ?? null,
         ciudad: d.ciudad ?? null,
-        lat: d.lat != null ? new Prisma.Decimal(d.lat) : null,
-        lng: d.lng != null ? new Prisma.Decimal(d.lng) : null,
+        lat: d.lat != null ? new Decimal(d.lat) : null,
+        lng: d.lng != null ? new Decimal(d.lng) : null,
         observaciones: d.observaciones ?? null,
         qrUrl: d.qrUrl ?? null,
         logotipo: d.logotipo ?? null,
@@ -50,10 +52,10 @@ export const ComplejosController = {
         data.diasDisponibles = d.diasDisponibles;
       }
       if (d.precioDiurnoPorHora != null) {
-        data.precioDiurnoPorHora = new Prisma.Decimal(d.precioDiurnoPorHora);
+        data.precioDiurnoPorHora = new Decimal(d.precioDiurnoPorHora);
       }
       if (d.precioNocturnoPorHora != null) {
-        data.precioNocturnoPorHora = new Prisma.Decimal(d.precioNocturnoPorHora);
+        data.precioNocturnoPorHora = new Decimal(d.precioNocturnoPorHora);
       }
 
       //  Crear complejo
@@ -62,7 +64,7 @@ export const ComplejosController = {
 
     } catch (e: any) {
       //  Error de unicidad: (nombre + ciudad)
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
         return res.status(409).json({
           message: 'Ya existe un complejo con ese nombre en esa ciudad'
         });
@@ -120,20 +122,20 @@ export const ComplejosController = {
       if (d.diasDisponibles != null) data.diasDisponibles = d.diasDisponibles;
 
       if (d.precioDiurnoPorHora != null) {
-        data.precioDiurnoPorHora = new Prisma.Decimal(d.precioDiurnoPorHora);
+        data.precioDiurnoPorHora = new Decimal(d.precioDiurnoPorHora);
       }
       if (d.precioNocturnoPorHora != null) {
-        data.precioNocturnoPorHora = new Prisma.Decimal(d.precioNocturnoPorHora);
+        data.precioNocturnoPorHora = new Decimal(d.precioNocturnoPorHora);
       }
 
       if (d.direccion !== undefined) data.direccion = d.direccion ?? null;
       if (d.ciudad !== undefined) data.ciudad = d.ciudad ?? null;
 
       if (d.lat !== undefined) {
-        data.lat = d.lat == null ? null : new Prisma.Decimal(d.lat);
+        data.lat = d.lat == null ? null : new Decimal(d.lat);
       }
       if (d.lng !== undefined) {
-        data.lng = d.lng == null ? null : new Prisma.Decimal(d.lng);
+        data.lng = d.lng == null ? null : new Decimal(d.lng);
       }
 
       if (d.observaciones !== undefined) data.observaciones = d.observaciones ?? null;

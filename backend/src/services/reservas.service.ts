@@ -1,5 +1,5 @@
 import { ReservasRepo } from '../repositories/reservas.repo';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { PreciosService } from './precios.service';
 import type { CrearReservaInput, ModificarReservaInput } from '../validations/reservas.schema';
 
@@ -7,13 +7,22 @@ const prisma = new PrismaClient();
 
 type TipoReserva = 'diaria' | 'mensual' | 'recurrente';
 
-/**
- * Mapea día de la semana (0=domingo, 1=lunes, ..., 6=sábado) a enum DiaSemana
- */
+/** Mapea día de la semana (0=domingo, 1=lunes, ..., 6=sábado) a enum DiaSemana */
 const getDayName = (dayOfWeek: number): string => {
-  const days = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+  const days = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
   return days[dayOfWeek];
 };
+
+/** Tipos auxiliares para quitar any en callbacks */
+type Horario = Awaited<ReturnType<typeof prisma.horarios.findMany>>[number];
+type Slot = {
+  id: string;
+  fecha: Date;
+  hora_inicio: Date;
+  hora_fin: Date;
+  precio: number;
+};
+type Rango = { dia_semana: string; hora_inicio: string; hora_fin: string };
 
 export const ReservasService = {
   /**
@@ -21,7 +30,14 @@ export const ReservasService = {
    * @param usuario_id - ID del usuario autenticado
    * @param data - Datos de la reserva (horarios, tipo_reserva, etc.)
    */
-  async crear(usuario_id: string, data: CrearReservaInput & { tipo_reserva?: TipoReserva; recurrencia_dia_semana?: string; recurrencia_hora?: string }) {
+  async crear(
+    usuario_id: string,
+    data: CrearReservaInput & {
+      tipo_reserva?: TipoReserva;
+      recurrencia_dia_semana?: string;
+      recurrencia_hora?: string;
+    }
+  ) {
     try {
       const tipo_reserva = data.tipo_reserva || 'diaria';
 
@@ -53,19 +69,10 @@ export const ReservasService = {
           const fechaHorario = new Date(year, month - 1, day);
           fechaHorario.setHours(0, 0, 0, 0);
 
-          console.log('🔍 Validando fecha de horario:', {
-            horario_id: item.horario_id,
-            fechaStr,
-            fechaHorario: fechaHorario.toISOString(),
-            manana: manana.toISOString(),
-            limiteMaximo: limiteMaximo.toISOString(),
-          });
-
           // Validar que la fecha sea desde mañana hasta 30 días
           if (fechaHorario.getTime() < manana.getTime()) {
             throw new Error('Las reservas diarias deben hacerse con al menos 1 día de anticipación');
           }
-
           if (fechaHorario.getTime() > limiteMaximo.getTime()) {
             throw new Error('Las reservas diarias solo pueden hacerse hasta 30 días en el futuro');
           }
@@ -87,7 +94,6 @@ export const ReservasService = {
 
       return reserva;
     } catch (error: any) {
-      // Propagar el error con mensaje claro
       throw new Error(error.message || 'Error al crear la reserva');
     }
   },
@@ -123,14 +129,12 @@ export const ReservasService = {
           lte: finMes,
         },
         disponible: true,
-        reserva_items: {
-          none: {},
-        },
+        reserva_items: { none: {} },
       },
     });
 
     // Filtrar por día de la semana y hora
-    const horariosCoincidentes = horarios.filter((h) => {
+    const horariosCoincidentes = horarios.filter((h: Horario) => {
       const fecha = new Date(h.fecha);
       const dayOfWeek = fecha.getDay();
       const dayName = getDayName(dayOfWeek);
@@ -150,26 +154,25 @@ export const ReservasService = {
     });
 
     if (horariosCoincidentes.length === 0) {
-      const _rangos = (params as any).rangos as Array<{ dia_semana: string; hora_inicio: string; hora_fin: string }> | undefined;
+      const _rangos = (params as any).rangos as Rango[] | undefined;
       if (Array.isArray(_rangos) && _rangos.length > 0) {
         throw new Error('No se encontraron horarios disponibles para los rangos solicitados durante el mes');
       }
-      const diasTxt = (Array.isArray(dias_semana) && dias_semana.length > 0)
-        ? dias_semana.join(', ')
-        : String(dia_semana);
+      const diasTxt =
+        Array.isArray(dias_semana) && dias_semana.length > 0 ? dias_semana.join(', ') : String(dia_semana);
       throw new Error(`No se encontraron horarios disponibles para ${diasTxt} a las ${hora_inicio}-${hora_fin} durante el mes`);
     }
 
     // Crear reserva con todos los horarios
     // Si no se proporciona precio y el slot no tiene precio, calculamos según diurno/nocturno
-    let horariosData = horariosCoincidentes.map((h) => ({
+    let horariosData = horariosCoincidentes.map((h: Horario) => ({
       horario_id: h.id,
       precio: precio ?? (h.precio != null ? Number(h.precio) : undefined),
     }));
 
     const slotsSinPrecio = horariosCoincidentes
-      .filter((h, idx) => horariosData[idx].precio == null)
-      .map((h) => ({
+      .filter((_h: Horario, idx: number) => horariosData[idx].precio == null)
+      .map((h: Horario) => ({
         id: h.id,
         horaIni: h.hora_inicio.toISOString().substring(11, 16), // HH:MM
         horaFin: h.hora_fin.toISOString().substring(11, 16),
@@ -177,10 +180,10 @@ export const ReservasService = {
 
     if (slotsSinPrecio.length > 0) {
       const precificados = await PreciosService.precificarSlots(cancha_id, slotsSinPrecio);
-      const precioPorId = new Map(precificados.map((p) => [p.id, p.precioBs]));
-      horariosData = horariosData.map((d) =>
-        d.precio != null ? d : { ...d, precio: precioPorId.get(d.horario_id) || 0 }
-      );
+      const precioPorId = new Map<string, number>(precificados.map((p) => [p.id, p.precioBs]));
+      horariosData = horariosData.map((d: { horario_id: string; precio?: number }) =>  d.precio != null ? d : { ...d, precio: precioPorId.get(d.horario_id) || 0 }
+);
+
     }
 
     const reserva = await ReservasRepo.crearConItems(usuario_id, horariosData, {
@@ -198,8 +201,8 @@ export const ReservasService = {
     dia_semana?: string;
     dias_semana?: string[];
     hora_inicio: string; // "HH:MM"
-    hora_fin: string;    // "HH:MM"
-    precio?: number;     // opcional precio fijo por slot
+    hora_fin: string; // "HH:MM"
+    precio?: number; // opcional precio fijo por slot
   }) {
     const { cancha_id, dia_semana, dias_semana, hora_inicio, hora_fin, precio } = params;
 
@@ -222,25 +225,28 @@ export const ReservasService = {
       },
     });
 
-    let horariosCoincidentes = horarios;
+    let horariosCoincidentes: Horario[] = horarios as Horario[];
 
     // Si se proporcionaron rangos y no hubo coincidencias con el filtro base, intentar recalcular por rangos
-    const _rangos = (params as any).rangos as Array<{ dia_semana: string; hora_inicio: string; hora_fin: string }> | undefined;
+    const _rangos = (params as any).rangos as Rango[] | undefined;
     if (Array.isArray(_rangos) && _rangos.length > 0) {
-      const rangosNorm = _rangos.map((r) => ({
+      const rangosNorm = _rangos.map((r: Rango) => ({
         dia: String(r.dia_semana).toUpperCase(),
         hIni: r.hora_inicio,
         hFin: r.hora_fin,
       }));
       const setIds = new Set<string>();
-      const recalculados: typeof horarios = [];
-      for (const h of horarios) {
+      const recalculados: Horario[] = [];
+      for (const h of horarios as Horario[]) {
         const fecha = new Date(h.fecha);
         const dayName = getDayName(fecha.getDay());
         const hIni = h.hora_inicio.toISOString().substring(11, 16);
         const hFin = h.hora_fin.toISOString().substring(11, 16);
         if (rangosNorm.some((r) => r.dia === dayName && r.hIni === hIni && r.hFin === hFin)) {
-          if (!setIds.has(h.id)) { setIds.add(h.id); recalculados.push(h); }
+          if (!setIds.has(h.id)) {
+            setIds.add(h.id);
+            recalculados.push(h);
+          }
         }
       }
       if (recalculados.length > 0) {
@@ -248,22 +254,25 @@ export const ReservasService = {
       }
     }
 
-    const rangos = (params as any).rangos as Array<{ dia_semana: string; hora_inicio: string; hora_fin: string }> | undefined;
-    let candidatos: typeof horarios = [];
+    const rangos = (params as any).rangos as Rango[] | undefined;
+    let candidatos: Horario[] = [];
     if (Array.isArray(rangos) && rangos.length > 0) {
-      const rangosNorm = rangos.map((r) => ({
+      const rangosNorm = rangos.map((r: Rango) => ({
         dia: String(r.dia_semana).toUpperCase(),
         hIni: r.hora_inicio,
         hFin: r.hora_fin,
       }));
       const setIds = new Set<string>();
-      for (const h of horarios) {
+      for (const h of horarios as Horario[]) {
         const fecha = new Date(h.fecha);
         const dayName = getDayName(fecha.getDay());
         const hIni = h.hora_inicio.toISOString().substring(11, 16);
         const hFin = h.hora_fin.toISOString().substring(11, 16);
         if (rangosNorm.some((r) => r.dia === dayName && r.hIni === hIni && r.hFin === hFin)) {
-          if (!setIds.has(h.id)) { setIds.add(h.id); candidatos.push(h); }
+          if (!setIds.has(h.id)) {
+            setIds.add(h.id);
+            candidatos.push(h);
+          }
         }
       }
     } else {
@@ -272,7 +281,7 @@ export const ReservasService = {
           .filter(Boolean)
           .map((d) => String(d).toUpperCase())
       );
-      candidatos = horarios.filter((h) => {
+      candidatos = (horarios as Horario[]).filter((h: Horario) => {
         const fecha = new Date(h.fecha);
         const dayName = getDayName(fecha.getDay());
         if (!diasPermitidos.has(dayName)) return false;
@@ -283,19 +292,19 @@ export const ReservasService = {
     }
 
     if (candidatos.length === 0) {
-      return { count: 0, total: 0, slots: [] as any[] };
+      return { count: 0, total: 0, slots: [] as Slot[] };
     }
 
     // Determinar precio por slot
-    let preciosMap = new Map<string, number>();
+    const preciosMap = new Map<string, number>();
     if (precio != null) {
-      candidatos.forEach((h) => preciosMap.set(h.id, Number(precio)));
+      candidatos.forEach((h: Horario) => preciosMap.set(h.id, Number(precio)));
     } else {
-      const sinPrecio = candidatos.filter((h) => h.precio == null);
+      const sinPrecio = candidatos.filter((h: Horario) => h.precio == null);
       if (sinPrecio.length > 0) {
         const precificados = await PreciosService.precificarSlots(
           cancha_id,
-          sinPrecio.map((h) => ({
+          sinPrecio.map((h: Horario) => ({
             id: h.id,
             horaIni: h.hora_inicio.toISOString().substring(11, 16),
             horaFin: h.hora_fin.toISOString().substring(11, 16),
@@ -305,18 +314,19 @@ export const ReservasService = {
       }
       // Slots con precio ya definido en tabla horarios
       candidatos
-        .filter((h) => h.precio != null)
-        .forEach((h) => preciosMap.set(h.id, Number(h.precio)));
+        .filter((h: Horario) => h.precio != null)
+        .forEach((h: Horario) => preciosMap.set(h.id, Number(h.precio)));
     }
 
-    const slots = candidatos.map((h) => ({
+    const slots: Slot[] = candidatos.map((h: Horario) => ({
       id: h.id,
       fecha: h.fecha,
       hora_inicio: h.hora_inicio,
       hora_fin: h.hora_fin,
       precio: preciosMap.get(h.id) || 0,
     }));
-    const total = slots.reduce((s, it) => s + (Number(it.precio) || 0), 0);
+
+    const total = slots.reduce((s: number, it: Slot) => s + (Number(it.precio) || 0), 0);
 
     return { count: slots.length, total, slots };
   },
@@ -335,13 +345,14 @@ export const ReservasService = {
       precio?: number;
     }
   ) {
-    const { cancha_id, dia_semana, hora_inicio, hora_fin, precio } = params;
+    const { dia_semana, hora_inicio } = params;
 
     // Similar a mensual, pero se marca como recurrente para que se renueve automáticamente
     const reservaMensual = await this.crearMensual(usuario_id, params);
     if (!reservaMensual) {
       throw new Error('No se pudo crear la reserva mensual');
     }
+
     // Actualizar a tipo recurrente
     const reservaRecurrente = await prisma.reservas.update({
       where: { id: reservaMensual.id },
@@ -355,11 +366,7 @@ export const ReservasService = {
           include: {
             horario: {
               include: {
-                cancha: {
-                  include: {
-                    complejo: true,
-                  },
-                },
+                cancha: { include: { complejo: true } },
               },
             },
           },
@@ -372,9 +379,7 @@ export const ReservasService = {
     return reservaRecurrente;
   },
 
-  /**
-   * Obtener el historial de reservas del usuario
-   */
+  /** Obtener el historial de reservas del usuario */
   async misReservas(
     usuario_id: string,
     filters: { estado?: string; limit?: number; offset?: number }
@@ -382,10 +387,7 @@ export const ReservasService = {
     return ReservasRepo.listarPorUsuario(usuario_id, filters);
   },
 
-  /**
-   * Obtener detalle de una reserva específica
-   * Valida que la reserva pertenezca al usuario
-   */
+  /** Obtener detalle de una reserva específica */
   async obtenerDetalle(reserva_id: string, usuario_id: string) {
     const reserva = await ReservasRepo.obtenerPorId(reserva_id);
 
@@ -395,7 +397,6 @@ export const ReservasService = {
       throw err;
     }
 
-    // Verificar que la reserva pertenezca al usuario
     if (reserva.usuario_id !== usuario_id) {
       const err: any = new Error('No tienes permiso para ver esta reserva');
       err.status = 403;
@@ -407,13 +408,8 @@ export const ReservasService = {
 
   /**
    * Modificar una reserva (cambiar horarios)
-   * Valida que:
-   * - La reserva exista y pertenezca al usuario
-   * - Esté en estado pendiente
-   * - No haya pasado el plazo de modificación (opcional)
    */
   async modificar(reserva_id: string, usuario_id: string, data: ModificarReservaInput) {
-    // Verificar que la reserva exista y pertenezca al usuario
     const reservaActual = await ReservasRepo.obtenerPorId(reserva_id);
 
     if (!reservaActual) {
@@ -434,17 +430,6 @@ export const ReservasService = {
       throw err;
     }
 
-    // TODO: Agregar validación de plazo límite (ej: 24h antes del primer horario)
-    // const primerHorario = reservaActual.items[0]?.horario;
-    // if (primerHorario) {
-    //   const fechaHorario = new Date(primerHorario.fecha);
-    //   const ahora = new Date();
-    //   const horasRestantes = (fechaHorario.getTime() - ahora.getTime()) / (1000 * 60 * 60);
-    //   if (horasRestantes < 24) {
-    //     throw new Error('No se puede modificar la reserva con menos de 24 horas de anticipación');
-    //   }
-    // }
-
     try {
       const reservaModificada = await ReservasRepo.modificarHorarios(reserva_id, data.horarios);
       return reservaModificada;
@@ -457,10 +442,8 @@ export const ReservasService = {
 
   /**
    * Cancelar una reserva
-   * Valida que la reserva pertenezca al usuario
    */
   async cancelar(reserva_id: string, usuario_id: string) {
-    // Verificar que la reserva exista y pertenezca al usuario
     const reserva = await ReservasRepo.obtenerPorId(reserva_id);
 
     if (!reserva) {
@@ -481,9 +464,6 @@ export const ReservasService = {
       throw err;
     }
 
-    // TODO: Agregar validación de plazo límite para cancelación
-    // Por ejemplo, no permitir cancelar si falta menos de X horas
-
     try {
       const reservaCancelada = await ReservasRepo.cancelar(reserva_id);
       return reservaCancelada;
@@ -494,10 +474,7 @@ export const ReservasService = {
     }
   },
 
-  /**
-   * Listar reservas del panel de administrador
-   * Muestra reservas de los complejos que pertenecen al admin
-   */
+  /** Listar reservas del panel de administrador */
   async listarPorAdmin(
     admin_id: string,
     filters: { complejo_id?: string; estado?: string; fecha?: string }
@@ -505,16 +482,12 @@ export const ReservasService = {
     return ReservasRepo.listarPorAdmin(admin_id, filters);
   },
 
-  /**
-   * Cambiar estado de una reserva (admin)
-   * Valida que el admin sea dueño del complejo
-   */
+  /** Cambiar estado de una reserva (admin) */
   async cambiarEstado(
     reserva_id: string,
     admin_id: string,
     estado: 'confirmada' | 'cancelada'
   ) {
-    // Obtener la reserva
     const reserva = await ReservasRepo.obtenerPorId(reserva_id);
 
     if (!reserva) {
@@ -523,7 +496,6 @@ export const ReservasService = {
       throw err;
     }
 
-    // Verificar que el admin sea dueño de la cancha (complejo o individual)
     const primerItem = reserva.items[0];
     if (!primerItem) {
       const err: any = new Error('Reserva sin horarios');

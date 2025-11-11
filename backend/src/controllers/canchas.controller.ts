@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { CanchasService } from '../services/canchas.service';
-import { Prisma } from '../generated/prisma';
+import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import type { AuthedRequest } from '../middlewares/auth.middleware';
+
 
 export const CanchasController = {
   async crear(req: AuthedRequest, res: Response) {
@@ -57,7 +59,7 @@ export const CanchasController = {
     try {
       const { id } = req.params;
       const d = req.body ?? {};
-
+      
       // Validaciones suaves
       if (typeof d.nombre === 'string') d.nombre = d.nombre.trim();
 
@@ -70,10 +72,10 @@ export const CanchasController = {
 
       // Precios
       if (d.precioDiurnoPorHora != null) {
-        data.precioDiurnoPorHora = new Prisma.Decimal(d.precioDiurnoPorHora);
+        data.precioDiurnoPorHora = new Decimal(d.precioDiurnoPorHora);
       }
       if (d.precioNocturnoPorHora != null) {
-        data.precioNocturnoPorHora = new Prisma.Decimal(d.precioNocturnoPorHora);
+        data.precioNocturnoPorHora = new Decimal(d.precioNocturnoPorHora);
       }
 
       // Días disponibles (para configuración de horarios)
