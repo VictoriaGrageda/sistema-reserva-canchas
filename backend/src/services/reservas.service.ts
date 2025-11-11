@@ -165,10 +165,11 @@ export const ReservasService = {
 
     // Crear reserva con todos los horarios
     // Si no se proporciona precio y el slot no tiene precio, calculamos según diurno/nocturno
-    let horariosData = horariosCoincidentes.map((h: Horario) => ({
-      horario_id: h.id,
-      precio: precio ?? (h.precio != null ? Number(h.precio) : undefined),
-    }));
+    let horariosData: { horario_id: string; precio: number | undefined }[] =
+  horariosCoincidentes.map((h: Horario) => ({
+    horario_id: h.id,
+    precio: precio ?? (h.precio != null ? Number(h.precio) : undefined),
+  }));
 
     const slotsSinPrecio = horariosCoincidentes
       .filter((_h: Horario, idx: number) => horariosData[idx].precio == null)
@@ -181,8 +182,10 @@ export const ReservasService = {
     if (slotsSinPrecio.length > 0) {
       const precificados = await PreciosService.precificarSlots(cancha_id, slotsSinPrecio);
       const precioPorId = new Map<string, number>(precificados.map((p) => [p.id, p.precioBs]));
-      horariosData = horariosData.map((d: { horario_id: string; precio?: number }) =>  d.precio != null ? d : { ...d, precio: precioPorId.get(d.horario_id) || 0 }
+      horariosData = horariosData.map((d: { horario_id: string; precio: number | undefined }) =>
+  d.precio != null ? d : { ...d, precio: precioPorId.get(d.horario_id) ?? 0 }
 );
+
 
     }
 
