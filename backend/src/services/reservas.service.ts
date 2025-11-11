@@ -339,7 +339,9 @@ export const ReservasService = {
 
     // Similar a mensual, pero se marca como recurrente para que se renueve automáticamente
     const reservaMensual = await this.crearMensual(usuario_id, params);
-
+    if (!reservaMensual) {
+      throw new Error('No se pudo crear la reserva mensual');
+    }
     // Actualizar a tipo recurrente
     const reservaRecurrente = await prisma.reservas.update({
       where: { id: reservaMensual.id },
