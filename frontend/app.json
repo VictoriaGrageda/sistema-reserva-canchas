@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Sistema Reserva Canchas",
+    "slug": "sistema-reserva-canchas",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,18 +13,36 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tuorg.sistemareservacanchas"
     },
     "android": {
+      "package": "com.tuorg.sistemareservacanchas",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "scheme": "sistemacanchas",
+    "extra": {
+      "EXPO_PUBLIC_API_URL": "https://sistema-reserva-canchas.onrender.com/api/v1",
+      "eas": {
+        "projectId": "b78f50b3-487d-45c6-a5a7-5be15305af37"
+      }
+    },
+    "owner": "alee7171",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b78f50b3-487d-45c6-a5a7-5be15305af37"
     }
   }
 }
