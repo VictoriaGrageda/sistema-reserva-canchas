@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "expo-image-picker": "^17.0.8"
+    "expo-image-picker": "^17.0.8",
+    "zod": "^3.25.76"
   }
 }
