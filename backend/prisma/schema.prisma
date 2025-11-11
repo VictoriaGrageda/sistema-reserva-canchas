@@ -14,175 +14,78 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model usuarios {
-  id          String   @id @default(uuid()) @db.Uuid
-  nombre      String
-  apellidos   String
-  ci          String
-  correo      String   @unique
-  telefono    String?
-  contrasena  String   @map("contraseña")
-  rol         Rol      @default(pendiente)
-  foto_perfil String?
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @updatedAt @db.Timestamp(6)
 
-  // relaciones
+model usuarios {
+  id             String           @id @default(uuid()) @db.Uuid
+  nombre         String
+  correo         String           @unique
+  telefono       String?
+  contrasena     String           @map("contraseña")
+  rol            Rol
+  foto_perfil    String?
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  updated_at     DateTime         @updatedAt @db.Timestamp(6)
   notificaciones notificaciones[] @relation("UsuarioNotificaciones")
   qrs_admin      qrs[]            @relation("QRAdmin")
   reservas       reservas[]
-
-  // 🔹 OJO: MISMO NOMBRE DE RELACIÓN que en `model complejos`
-  complejos complejos[] @relation("UsuarioComplejosAdmin")
-
-  // 🔹 Canchas individuales del admin
-  canchas_individuales canchas[] @relation("UsuarioCanchasAdmin")
 
   @@map("usuarios")
 }
 
 model complejos {
-  id                    String      @id @default(uuid()) @db.Uuid
-  nombre                String
-  otb                   String
-  subalcaldia           String
-  celular               String
-  telefono              String?
-  diasDisponibles       DiaSemana[] @default([]) // Ahora opcional, se configura en edición
-  precioDiurnoPorHora   Decimal?    @db.Decimal(10, 2) // Opcional, se configura en edición
-  precioNocturnoPorHora Decimal?    @db.Decimal(10, 2) // Opcional, se configura en edición
-  direccion             String?
-  ciudad                String?
-  lat                   Decimal?    @db.Decimal(9, 6)
-  lng                   Decimal?    @db.Decimal(9, 6)
-  observaciones         String?
-  qrUrl                 String?
-  logotipo              String?
+  id         String    @id @default(uuid()) @db.Uuid
+  nombre     String
+  direccion  String?
+  telefono   String?
+  logotipo   String?
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime  @updatedAt @db.Timestamp(6)
+  canchas    canchas[]
 
-  created_at DateTime @default(now()) @db.Timestamp(6)
-  updated_at DateTime @updatedAt @db.Timestamp(6)
-
-  // 🔹 MISMO NOMBRE DE RELACIÓN que en `model usuarios`
-  admin_id String   @db.Uuid
-  admin    usuarios @relation("UsuarioComplejosAdmin", fields: [admin_id], references: [id], onDelete: Restrict)
-
-  canchas canchas[]
-
-  @@unique([nombre, ciudad])
-  @@index([admin_id])
-  @@index([ciudad])
-  @@index([ciudad, nombre])
   @@map("complejos")
 }
 
 model canchas {
-  id String @id @default(uuid()) @db.Uuid
+  id          String     @id @default(uuid()) @db.Uuid
+  complejo_id String     @db.Uuid
+  nombre      String
+  deporte     String
+  superficie  String?
+  precio_hora Decimal    @db.Decimal(10, 2)
+  created_at  DateTime   @default(now()) @db.Timestamp(6)
+  updated_at  DateTime   @updatedAt @db.Timestamp(6)
+  complejo    complejos  @relation(fields: [complejo_id], references: [id])
+  horarios    horarios[]
 
-  // Relación OPCIONAL con complejo
-  complejo_id String?    @db.Uuid
-  complejo    complejos? @relation(fields: [complejo_id], references: [id], onDelete: SetNull)
-
-  // Relación OPCIONAL directa al admin (cancha individual)
-  admin_id String?   @db.Uuid
-  admin    usuarios? @relation("UsuarioCanchasAdmin", fields: [admin_id], references: [id], onDelete: SetNull)
-
-  nombre                String
-  tipoCampo             TipoCampo
-  tipoCancha            TipoCancha
-  otb                   String?
-  subalcaldia           String?
-  celular               String?
-  diasDisponibles       DiaSemana[]
-  observaciones         String?
-  qrUrl                 String?
-  direccion             String?
-  ciudad                String?
-  lat                   Decimal?    @db.Decimal(9, 6)
-  lng                   Decimal?    @db.Decimal(9, 6)
-  precioDiurnoPorHora   Decimal?    @db.Decimal(10, 2)
-  precioNocturnoPorHora Decimal?    @db.Decimal(10, 2)
-
-  // 🆕 Nueva configuración de horarios
-  horaCorte             String?     @default("18:00") // Hora de corte para diurno/nocturno (HH:MM)
-
-  activo                Boolean     @default(true)
-  created_at            DateTime    @default(now()) @db.Timestamp(6)
-  updated_at            DateTime    @updatedAt @db.Timestamp(6)
-
-  horarios              horarios[]
-  configuraciones_horarios configuraciones_horarios[]
-
-  @@unique([complejo_id, nombre])
   @@index([complejo_id])
-  @@index([admin_id])
-  @@index([tipoCancha])
-  @@index([ciudad])
   @@map("canchas")
 }
 
-model configuraciones_horarios {
-  id              String    @id @default(uuid()) @db.Uuid
-  cancha_id       String    @db.Uuid
-  dia_semana      DiaSemana
-  hora_inicio     String    // HH:MM (formato 24 horas)
-  hora_fin        String    // HH:MM (formato 24 horas)
-  created_at      DateTime  @default(now()) @db.Timestamp(6)
-  updated_at      DateTime  @updatedAt @db.Timestamp(6)
-
-  cancha canchas @relation(fields: [cancha_id], references: [id], onDelete: Cascade)
-
-  @@unique([cancha_id, dia_semana, hora_inicio, hora_fin])
-  @@index([cancha_id])
-  @@map("configuraciones_horarios")
-}
-
 model horarios {
-  id          String   @id @default(uuid()) @db.Uuid
-  cancha_id   String   @db.Uuid
-  fecha       DateTime @db.Date
-  hora_inicio DateTime @db.Time(6)
-  hora_fin    DateTime @db.Time(6)
-  disponible  Boolean  @default(true)
-
-  // 🆕 Campos para el nuevo sistema
-  precio      Decimal? @db.Decimal(10, 2) // Precio específico del slot
-  es_diurno   Boolean  @default(true)      // true = diurno, false = nocturno
-
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @updatedAt @db.Timestamp(6)
-
-  cancha        canchas         @relation(fields: [cancha_id], references: [id], onDelete: Cascade)
+  id            String          @id @default(uuid()) @db.Uuid
+  cancha_id     String          @db.Uuid
+  fecha         DateTime        @db.Date
+  hora_inicio   DateTime        @db.Time(6)
+  hora_fin      DateTime        @db.Time(6)
+  disponible    Boolean         @default(true)
+  cancha        canchas         @relation(fields: [cancha_id], references: [id])
   reserva_items reserva_items[]
 
-  @@unique([cancha_id, fecha, hora_inicio, hora_fin])
-  @@index([cancha_id, fecha])
-  @@index([cancha_id, fecha, disponible]) // 🆕 Para búsquedas de disponibilidad
+  @@index([cancha_id])
   @@map("horarios")
 }
 
 model reservas {
-  id         String        @id @default(uuid()) @db.Uuid
-  usuario_id String        @db.Uuid
-  estado     EstadoReserva @default(pendiente)
-
-  // 🆕 Tipo de reserva
-  tipo_reserva TipoReserva @default(diaria)
-
-  // 🆕 Para reservas recurrentes
-  recurrencia_dia_semana DiaSemana? // Día de la semana para recurrencia
-  recurrencia_hora       String?     // Hora para recurrencia (HH:MM)
-
-  created_at DateTime      @default(now()) @db.Timestamp(6)
-  updated_at DateTime      @updatedAt @db.Timestamp(6)
-
+  id             String           @id @default(uuid()) @db.Uuid
+  usuario_id     String           @db.Uuid
+  estado         EstadoReserva    @default(pendiente)
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
   notificaciones notificaciones[] @relation("ReservaNotificaciones")
   pagos          pagos[]
   items          reserva_items[]
-
-  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  usuario        usuarios         @relation(fields: [usuario_id], references: [id])
 
   @@index([usuario_id])
-  @@index([tipo_reserva])
   @@map("reservas")
 }
 
@@ -191,30 +94,22 @@ model reserva_items {
   reserva_id String   @db.Uuid
   horario_id String   @db.Uuid
   precio     Decimal? @db.Decimal(10, 2)
-  created_at DateTime @default(now()) @db.Timestamp(6) // NUEVO
-  updated_at DateTime @updatedAt @db.Timestamp(6) // NUEVO
+  horario    horarios @relation(fields: [horario_id], references: [id])
+  reserva    reservas @relation(fields: [reserva_id], references: [id])
 
-  horario horarios @relation(fields: [horario_id], references: [id], onDelete: Restrict) // CAMBIO
-  reserva reservas @relation(fields: [reserva_id], references: [id], onDelete: Cascade) // CAMBIO
-
-  @@unique([horario_id]) // NUEVO: un horario no puede reservarse dos veces
   @@index([reserva_id])
   @@index([horario_id])
   @@map("reserva_items")
 }
 
 model pagos {
-  id          String     @id @default(uuid()) @db.Uuid
-  reserva_id  String     @db.Uuid
-  qr_id       String?    @db.Uuid
-  estado      EstadoPago @default(pendiente)
-  fecha_pago  DateTime?  @db.Timestamp(6)
-  comprobante String?    @db.Text // Cambio: soportar imágenes base64 grandes
-  created_at  DateTime   @default(now()) @db.Timestamp(6) // NUEVO
-  updated_at  DateTime   @updatedAt @db.Timestamp(6) // NUEVO
-
-  qr      qrs?     @relation(fields: [qr_id], references: [id], onDelete: SetNull) // CAMBIO
-  reserva reservas @relation(fields: [reserva_id], references: [id], onDelete: Cascade) // CAMBIO
+  id         String     @id @default(uuid()) @db.Uuid
+  reserva_id String     @db.Uuid
+  qr_id      String?    @db.Uuid
+  estado     EstadoPago @default(pendiente)
+  fecha_pago DateTime?  @db.Timestamp(6)
+  qr         qrs?       @relation(fields: [qr_id], references: [id])
+  reserva    reservas   @relation(fields: [reserva_id], references: [id])
 
   @@index([reserva_id])
   @@index([qr_id])
@@ -224,13 +119,11 @@ model pagos {
 model qrs {
   id         String   @id @default(uuid()) @db.Uuid
   admin_id   String   @db.Uuid
-  imagen_qr  String   @db.Text // Cambio: soportar imágenes base64 grandes
+  imagen_qr  String
   vigente    Boolean  @default(true)
   created_at DateTime @default(now()) @db.Timestamp(6)
-  updated_at DateTime @updatedAt @db.Timestamp(6) // NUEVO
-
-  pagos pagos[]
-  admin usuarios @relation("QRAdmin", fields: [admin_id], references: [id], onDelete: Restrict) // CAMBIO
+  pagos      pagos[]
+  admin      usuarios @relation("QRAdmin", fields: [admin_id], references: [id])
 
   @@index([admin_id])
   @@map("qrs")
@@ -243,10 +136,8 @@ model notificaciones {
   mensaje    String
   tipo       TipoNotificacion?
   created_at DateTime          @default(now()) @db.Timestamp(6)
-  updated_at DateTime          @updatedAt @db.Timestamp(6) // NUEVO
-
-  reserva reservas? @relation("ReservaNotificaciones", fields: [reserva_id], references: [id], onDelete: SetNull) // CAMBIO
-  usuario usuarios  @relation("UsuarioNotificaciones", fields: [usuario_id], references: [id], onDelete: Cascade) // CAMBIO
+  reserva    reservas?         @relation("ReservaNotificaciones", fields: [reserva_id], references: [id])
+  usuario    usuarios          @relation("UsuarioNotificaciones", fields: [usuario_id], references: [id])
 
   @@index([usuario_id])
   @@index([reserva_id])
@@ -254,7 +145,6 @@ model notificaciones {
 }
 
 enum Rol {
-  pendiente
   cliente
   administrador
 }
@@ -275,33 +165,4 @@ enum TipoNotificacion {
   reserva_creada
   pago_confirmado
   recordatorio
-}
-
-enum DiaSemana {
-  LUNES
-  MARTES
-  MIERCOLES
-  JUEVES
-  VIERNES
-  SABADO
-  DOMINGO
-}
-
-enum TipoCampo {
-  SINTETICO
-  TIERRA
-  CESPED
-}
-
-enum TipoCancha {
-  FUT5
-  FUT6
-  FUT8
-  FUT11
-}
-
-enum TipoReserva {
-  diaria      // D+1: solo para mañana
-  mensual     // Bloquea horarios durante todo el mes
-  recurrente  // Repite mismo día/hora cada mes
 }
