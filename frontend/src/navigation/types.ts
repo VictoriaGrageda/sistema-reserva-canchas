@@ -50,6 +50,9 @@ export type RootStackParamList = {
   DetalleReservaQR: {
     reserva_id: string;
   };
+  DetalleBoleta: {
+    reserva_id: string;
+  };
   EditarCancha: {
     cancha_id: string;
   };

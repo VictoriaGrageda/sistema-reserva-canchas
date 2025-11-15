@@ -28,6 +28,14 @@ export default function HomeScreen({ navigation }: NavProps<'Home'>) {
           >
             <Text style={styles.actionTitleDark}>Mis reservas</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.action, styles.actionTertiary]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('HistorialReservas')}
+          >
+            <Text style={styles.actionTitleDark}>Historial de reservas</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -84,7 +92,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red, // rojo de tu theme
   },
   actionSecondary: {
-    backgroundColor: '#51e91fff',
+    backgroundColor: "#51e91fff",
+  },
+  actionTertiary: {
+    backgroundColor: colors.mint,
   },
 
   // Tipografías

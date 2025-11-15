@@ -72,3 +72,48 @@ export const formatearFechaCorta = (fecha: string | Date): string => {
 
   return `${diaSemana} ${dia} ${mes}`;
 };
+const parseDateValue = (value?: string | Date): Date | null => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+export const formatearFechaLegible = (value?: string | Date): string => {
+  const date = parseDateValue(value);
+  if (!date) return "-";
+  return date.toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+export const formatearHoraLegible = (value?: string | Date): string => {
+  if (!value) return "--:--";
+  if (value instanceof Date) {
+    return value.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  const text = String(value);
+  if (text.includes("T")) {
+    const timePart = text.substring(text.indexOf("T") + 1, text.indexOf("T") + 6);
+    if (/^\d{2}:\d{2}$/.test(timePart)) return timePart;
+  }
+  if (text.includes(":")) {
+    const [hour = "--", minute = "00"] = text.split(":");
+    return `${hour.padStart(2, "0")}:${minute.slice(0, 2).padStart(2, "0")}`;
+  }
+  const date = parseDateValue(text);
+  if (date) {
+    return date.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return "--:--";
+};

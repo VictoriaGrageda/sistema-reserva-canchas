@@ -16,6 +16,7 @@ import colors from "../theme/colors";
 import Footer from "../components/FooterGestor";
 import type { NavProps } from "../navigation/types";
 import { PagosAPI } from "../api/pagos";
+import { formatearFechaLegible, formatearHoraLegible } from "../utils/fecha";
 
 type EstadoPago = "pendiente" | "confirmado" | "rechazado";
 
@@ -148,44 +149,14 @@ export default function SolicitudesReservasScreen({
     }
   };
 
-  const formatTime = (value?: string | number) => {
-    if (value == null) return "--:--";
-    if (typeof value === "string") {
-      const cleaned = value.replace(".", ":");
-      if (cleaned.includes(":")) {
-        const parts = cleaned.split(":").map((p) => p.padStart(2, "0"));
-        return `${parts[0]}:${parts[1] ?? "00"}`;
-      }
-      return cleaned;
-    }
-    if (typeof value === "number") {
-      const hours = Math.floor(value);
-      const minutes = Math.round((value - hours) * 60);
-      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-    }
-    return "--:--";
-  };
-
-  const formatFecha = (fecha?: string) => {
-    if (!fecha) return "Fecha no disponible";
-    const date = new Date(fecha);
-    if (Number.isNaN(date.getTime())) return "Fecha no disponible";
-    return date.toLocaleDateString("es-ES", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
   const formatHorarioLabel = (item: Pago["reserva"]["items"][number]) => {
     const horario = item.horario;
     if (!horario) return "Horario no disponible";
-    const fecha = formatFecha(horario.fecha);
-    const inicio = formatTime(horario.hora_inicio);
-    const fin = formatTime(horario.hora_fin);
+    const fecha = formatearFechaLegible(horario.fecha);
+    const inicio = formatearHoraLegible(horario.hora_inicio);
+    const fin = formatearHoraLegible(horario.hora_fin);
     const price = typeof item.precio === "number" ? `${item.precio.toLocaleString("es-BO")} Bs` : null;
-    return `${fecha} · ${inicio} - ${fin}${price ? ` · ${price}` : ""}`;
+    return `${fecha} | ${inicio} - ${fin}${price ? ` | ${price}` : ""}`;
   };
 
   if (loading) {
@@ -300,7 +271,7 @@ export default function SolicitudesReservasScreen({
                   ))}
                   {pago.reserva.items.length > 3 && (
                     <Text style={styles.moreText}>
-                      +{pago.reserva.items.length - 3} horarios m�s
+                      +{pago.reserva.items.length - 3} horarios más
                     </Text>
                   )}
                 </View>
@@ -354,14 +325,7 @@ export default function SolicitudesReservasScreen({
 
                 {/* Fecha del pago */}
                 <Text style={styles.fechaText}>
-                  Registrado:{" "}
-                  {new Date(pago.created_at).toLocaleString("es-ES", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  Registrado: {formatearFechaLegible(pago.created_at)} · {formatearHoraLegible(pago.created_at)}
                 </Text>
               </View>
             );
@@ -651,3 +615,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
+
+
+
+

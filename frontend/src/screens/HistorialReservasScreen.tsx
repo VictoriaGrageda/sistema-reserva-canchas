@@ -14,7 +14,7 @@ import colors from "../theme/colors";
 import Footer from "../components/Footer";
 import { ReservasAPI } from "../api/reservas";
 import type { NavProps } from "../navigation/types";
-import { formatearFechaCorta } from "../utils/fecha";
+import { formatearFechaLegible, formatearHoraLegible } from "../utils/fecha";
 
 interface Item {
   horario: {
@@ -38,6 +38,12 @@ interface Reserva {
   items: Item[];
 }
 
+type BadgeInfo = {
+  color: string;
+  label: string;
+  icon: string;
+};
+
 export default function HistorialReservasScreen({ navigation }: NavProps<"HistorialReservas">) {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +52,6 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
   const cargarReservas = async () => {
     try {
       const response = await ReservasAPI.listarMisReservas();
-      // El backend devuelve { data: [...] }
       const reservasData = response.data || response || [];
       setReservas(reservasData);
     } catch (error) {
@@ -66,7 +71,7 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
     cargarReservas();
   };
 
-  const getEstadoBadge = (estado: string) => {
+  const getEstadoBadge = (estado: string): BadgeInfo => {
     switch (estado) {
       case "pendiente":
         return { color: "#FFA500", label: "Pendiente", icon: "time-outline" };
@@ -118,38 +123,31 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
 
             return (
               <View key={reserva.id} style={styles.card}>
-                {/* Header */}
                 <View style={styles.cardHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>
                       {primeraCancha?.complejo?.nombre || primeraCancha?.nombre}
                     </Text>
                     <Text style={styles.cardSubtitle}>
-                      {new Date(reserva.created_at).toLocaleDateString("es-ES", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatearFechaLegible(reserva.created_at)} · {formatearHoraLegible(reserva.created_at)}
                     </Text>
                   </View>
-                  <View style={[styles.badge, { backgroundColor: badge.color }]}>
+                  <View style={[styles.badge, { backgroundColor: badge.color }]}> 
                     <Ionicons name={badge.icon as any} size={14} color="#fff" />
                     <Text style={styles.badgeText}>{badge.label}</Text>
                   </View>
                 </View>
 
-                {/* Horarios */}
                 <View style={styles.horariosSection}>
                   <Text style={styles.sectionTitle}>Horarios reservados:</Text>
                   {reserva.items.slice(0, 3).map((item, idx) => (
-                    <View key={idx} style={styles.horarioItem}>
+                    <View key={idx} style={styles.horarioRow}>
                       <Ionicons name="time-outline" size={14} color={colors.dark} />
-                      <Text style={styles.horarioText}>
-                        {formatearFechaCorta(item.horario.fecha)}{" "}
-                        • {item.horario.hora_inicio.substring(0, 5)} - {item.horario.hora_fin.substring(0, 5)}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.horarioText}>
+                          {formatearFechaLegible(item.horario.fecha)} · {formatearHoraLegible(item.horario.hora_inicio)} - {formatearHoraLegible(item.horario.hora_fin)}
+                        </Text>
+                      </View>
                       <Text style={styles.precioItem}>{item.precio} Bs</Text>
                     </View>
                   ))}
@@ -160,7 +158,6 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
                   )}
                 </View>
 
-                {/* Total */}
                 <View style={styles.totalSection}>
                   <Text style={styles.totalLabel}>Total pagado:</Text>
                   <Text style={styles.totalAmount}>{total} Bs</Text>
@@ -187,7 +184,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.lightGreen,
   },
-
   loadingContainer: {
     flex: 1,
     alignItems: "center",
@@ -199,35 +195,31 @@ const styles = StyleSheet.create({
     color: colors.dark,
     opacity: 0.7,
   },
-
   content: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 24,
+    paddingBottom: 30,
     gap: 12,
   },
-
   title: {
     fontSize: 22,
     fontWeight: "800",
     color: colors.dark,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.dark,
     opacity: 0.7,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-
-  // Card
   card: {
     backgroundColor: "#fff",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    elevation: 3,
+    marginBottom: 14,
+    elevation: 2,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
@@ -238,88 +230,79 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "800",
     color: colors.dark,
   },
   cardSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.dark,
-    opacity: 0.6,
+    opacity: 0.7,
     marginTop: 2,
   },
   badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
   },
   badgeText: {
     color: "#fff",
     fontSize: 11,
     fontWeight: "800",
   },
-
-  // Horarios
   horariosSection: {
-    marginBottom: 12,
-    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: "#E6F1E9",
+    paddingTop: 10,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     color: colors.dark,
-    opacity: 0.7,
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  horarioItem: {
+  horarioRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 3,
+    gap: 8,
+    marginBottom: 8,
   },
   horarioText: {
-    flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.dark,
+    fontWeight: "600",
   },
   precioItem: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     color: colors.green,
   },
   moreText: {
-    fontSize: 11,
-    color: colors.green,
-    fontWeight: "700",
-    marginTop: 4,
+    fontSize: 12,
+    color: colors.dark,
+    opacity: 0.6,
+    marginTop: 6,
   },
-
-  // Total
   totalSection: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#E6F1E9",
+    marginTop: 6,
   },
   totalLabel: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
     color: colors.dark,
+    opacity: 0.7,
   },
   totalAmount: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
     color: colors.green,
   },
-
-  // Empty state
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -328,7 +311,7 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "700",
     color: colors.dark,
   },
   emptySubtext: {
@@ -336,6 +319,5 @@ const styles = StyleSheet.create({
     color: colors.dark,
     opacity: 0.6,
     textAlign: "center",
-    marginTop: 4,
   },
 });

@@ -20,7 +20,8 @@ import ReservasRealizadasScreen from '../screens/ReservasRealizadasScreen';
 import ConfiguracionesScreen from '../screens/ConfiguracionesScreen';
 import HistorialReservasScreen from '../screens/HistorialReservasScreen';
 import ConfirmarReservaScreen from '../screens/ConfirmarReservaScreen';
-import DetalleReservaQRScreen from '../screens/DetalleReservaQRScreen'; 
+import DetalleReservaQRScreen from '../screens/DetalleReservaQRScreen';
+import DetalleBoletaScreen from '../screens/DetalleBoletaScreen';
 import TipoReservaScreen from '../screens/TipoReservaScreen';
 
 
@@ -95,6 +96,7 @@ export default function AppNavigator() {
       <Stack.Screen name="TipoReserva" component={TipoReservaScreen} />
       <Stack.Screen name="ConfirmarReserva" component={ConfirmarReservaScreen} />
       <Stack.Screen name="DetalleReservaQR" component={DetalleReservaQRScreen} />
+      <Stack.Screen name="DetalleBoleta" component={DetalleBoletaScreen} />
       <Stack.Screen name="ReservasRealizadas" component={ReservasRealizadasScreen} />
       <Stack.Screen name="Configuraciones" component={ConfiguracionesScreen} />
       <Stack.Screen name="HistorialReservas" component={HistorialReservasScreen} />
