@@ -996,12 +996,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 14,
   },
-  hint: {
-    fontSize: 11,
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
     color: colors.dark,
-    opacity: 0.6,
-    fontStyle: "italic",
-    marginTop: 4,
+    marginBottom: 4,
   },
   sectionLabel: {
     fontSize: 16,

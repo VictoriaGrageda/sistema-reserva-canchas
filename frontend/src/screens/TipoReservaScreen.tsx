@@ -44,7 +44,7 @@ export default function TipoReservaScreen({ navigation, route }: NavProps<'TipoR
         <TouchableOpacity style={[styles.choice, styles.choicePrimary]} onPress={() => go('diaria')} activeOpacity={0.85}>
           <Ionicons name="calendar" size={24} color="#fff" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.choiceTitlePrimary}>Reserva Normal</Text>
+            <Text style={styles.choiceTitlePrimary}>Reserva Diaria</Text>
             <Text style={styles.choiceDescPrimary}>Elige una fecha y horarios específicos</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#fff" />

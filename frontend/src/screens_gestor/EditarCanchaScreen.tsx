@@ -140,7 +140,7 @@ export default function EditarCanchaScreen({ navigation, route }: NavProps<"Edit
         console.log("🔍 Cargando configuraciones de horarios...");
         const configs = await HorariosAPI.obtenerConfiguraciones(cancha_id);
         const loadedSchedule = createEmptySchedule();
-        configs.forEach((cfg) => {
+        configs.forEach((cfg: ConfiguracionHorarioPayload) => {
           const dayKey = mapDayNameToKey(cfg.dia_semana as DiaSemana);
           if (!dayKey) return;
           loadedSchedule[dayKey] = sortRanges([...(loadedSchedule[dayKey] ?? []), { start: cfg.hora_inicio, end: cfg.hora_fin }]);
@@ -372,7 +372,7 @@ export default function EditarCanchaScreen({ navigation, route }: NavProps<"Edit
             }
             activeOpacity={0.8}
           >
-            <Text style={styles.priceSelectorLabel}>Precio Diurno (antes de 18:00)</Text>
+            <Text style={styles.priceSelectorLabel}>Precio Diurno</Text>
             <Text style={styles.priceSelectorValue}>
               {precioDiurno || "Seleccionar precio"}
             </Text>
@@ -390,7 +390,7 @@ export default function EditarCanchaScreen({ navigation, route }: NavProps<"Edit
             }
             activeOpacity={0.8}
           >
-            <Text style={styles.priceSelectorLabel}>Precio Nocturno (desde 18:00)</Text>
+            <Text style={styles.priceSelectorLabel}>Precio Nocturno</Text>
             <Text style={styles.priceSelectorValue}>
               {precioNocturno || "Seleccionar precio"}
             </Text>
@@ -489,23 +489,6 @@ export default function EditarCanchaScreen({ navigation, route }: NavProps<"Edit
           })}
         </View>
 
-        {/* DEBUG: Botón para ver estado actual */}
-        {__DEV__ && (
-          <TouchableOpacity
-            style={[styles.debugBtn]}
-            onPress={() => {
-              const diasConHorarios = DAYS.filter((d) => schedule[d.key].length > 0);
-              Alert.alert(
-                "Debug - Estado de Horarios",
-                `Días configurados: ${diasConHorarios.length}\n\n` +
-                DAYS.map(d => `${d.label}: ${schedule[d.key].length} rangos`).join('\n')
-              );
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.debugBtnText}>🔍 DEBUG: Ver Estado</Text>
-          </TouchableOpacity>
-        )}
 
         {/* Botón guardar */}
         <TouchableOpacity
@@ -881,18 +864,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: "italic",
   },
-
-  debugBtn: {
-    marginTop: 12,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#FFE082",
-    borderWidth: 2,
-    borderColor: "#FFC107",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  debugBtnText: { color: colors.dark, fontSize: 13, fontWeight: "700" },
 
   saveBtn: {
     marginTop: 12,

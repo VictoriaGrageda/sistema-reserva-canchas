@@ -18,7 +18,7 @@ import Footer from "../components/Footer";
 import type { NavProps } from "../navigation/types";
 import { ReservasAPI } from "../api/reservas";
 import { PagosAPI } from "../api/pagos";
-import { formatearFechaCompleta } from "../utils/fecha";
+import { formatearFechaCompleta, formatearHoraLegible } from "../utils/fecha";
 
 interface Horario {
   hora_inicio: string;
@@ -373,10 +373,10 @@ export default function DetalleReservaQRScreen({
                   </Text>
                   <View style={styles.horarioTimeRow}>
                     <Ionicons name="time" size={14} color={colors.green} />
-                    <Text style={styles.horarioHora}>
-                      {item.horario.hora_inicio.substring(0, 5)} -{" "}
-                      {item.horario.hora_fin.substring(0, 5)}
-                    </Text>
+                  <Text style={styles.horarioHora}>
+                    {formatearHoraLegible(item.horario.hora_inicio)} -{" "}
+                    {formatearHoraLegible(item.horario.hora_fin)}
+                  </Text>
                   </View>
                 </View>
                 <Text style={styles.horarioPrecio}>{item.precio} Bs</Text>

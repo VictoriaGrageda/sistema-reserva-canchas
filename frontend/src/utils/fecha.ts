@@ -8,8 +8,14 @@
  * Evita problemas de zona horaria que causan cambios de día
  */
 export const parseFechaLocal = (fechaStr: string): Date => {
-  const [year, month, day] = fechaStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const soloFecha = fechaStr.split("T")[0];
+  const parts = soloFecha.split("-").map(Number);
+  if (parts.length === 3 && parts.every((num) => !Number.isNaN(num))) {
+    const [year, month, day] = parts;
+    return new Date(year, month - 1, day);
+  }
+  const parsed = new Date(fechaStr);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
 /**

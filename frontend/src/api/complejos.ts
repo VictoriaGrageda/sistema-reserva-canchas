@@ -6,9 +6,9 @@ export interface RegistrarComplejoPayload {
   subalcaldia: string;
   celular: string;
   telefono?: string;
-  diasDisponibles: string[];
-  precioDiurnoPorHora: number;
-  precioNocturnoPorHora: number;
+  diasDisponibles?: string[];
+  precioDiurnoPorHora?: number;
+  precioNocturnoPorHora?: number;
   direccion?: string;
   ciudad?: string;
   lat?: number;
