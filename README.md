@@ -8,10 +8,10 @@ Figma → Diseño de la interfaz de usuario (prototipos de pantallas).
 
 GitHub → Repositorio de control de versiones (frontend y backend).
 
-Trello → Gestión de backlog, tareas y seguimiento de sprints.
+Tiaga → Gestión de backlog, tareas y seguimiento de sprints.
 
 VS Code + Postman → Entorno de desarrollo y pruebas.
 
 Objetivo General
 
-Desarrollar una aplicación web y móvil que permita a los usuarios consultar disponibilidad en tiempo real, realizar reservas de canchas deportivas, y gestionar pagos con QR, optimizando la administración de complejos deportivos y mejorando la experiencia de los clientes.
+Desarrollar una aplicación móvil que permita a los usuarios consultar disponibilidad en tiempo real, realizar reservas de canchas deportivas, y gestionar pagos con QR, optimizando la administración de complejos deportivos y mejorando la experiencia de los clientes.

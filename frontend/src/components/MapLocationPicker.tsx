@@ -17,8 +17,8 @@ import { LocationIQResult, LocationIQService } from '../services/locationiq';
 export type LocationSelection = LocationIQResult;
 
 const DEFAULT_REGION = {
-  latitude: -17.78324,
-  longitude: -63.18233,
+  latitude: -17.39298,
+  longitude: -66.15703,
   latitudeDelta: 0.04,
   longitudeDelta: 0.04,
 };
