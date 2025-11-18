@@ -1,5 +1,5 @@
 import { ReservasRepo } from '../repositories/reservas.repo';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { PreciosService } from './precios.service';
 import type { CrearReservaInput, ModificarReservaInput } from '../validations/reservas.schema';
 

@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const toNum = (v: any): number | null => (v == null ? null : Number(v));

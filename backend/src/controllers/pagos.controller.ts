@@ -31,7 +31,7 @@ const verificarRolAdmin = async (req: AuthedRequest): Promise<boolean> => {
   }
 
   // Siempre consultar la BD para obtener el rol actualizado
-  const { PrismaClient } = await import('../generated/prisma');
+  const { PrismaClient } = await import('@prisma/client');
   const prisma = new PrismaClient();
 
   try {

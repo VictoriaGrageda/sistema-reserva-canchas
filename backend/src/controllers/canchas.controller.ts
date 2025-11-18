@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { CanchasService } from '../services/canchas.service';
-import { Prisma } from '../generated/prisma';
+import { Prisma } from '@prisma/client';
 import type { AuthedRequest } from '../middlewares/auth.middleware';
 
 export const CanchasController = {

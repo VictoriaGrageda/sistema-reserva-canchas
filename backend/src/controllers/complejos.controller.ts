@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Prisma } from '../generated/prisma';
+import { Prisma } from '@prisma/client';
 import { ComplejosService } from '../services/complejos.service';
 import { serializeComplejo } from '../utils/serialize';
 

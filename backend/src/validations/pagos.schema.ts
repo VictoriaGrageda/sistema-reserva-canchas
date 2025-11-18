@@ -5,9 +5,10 @@ import { z } from 'zod';
  */
 export const MarcarPagoRealizadoSchema = z.object({
   qr_id: z.string().uuid('ID de QR inválido').optional(),
-  comprobante: z.string({
-    required_error: 'El comprobante de pago es requerido',
-  }).min(1, 'Debes subir una imagen del comprobante de pago'),
+
+  comprobante: z
+    .string({ message: 'El comprobante de pago es requerido' })
+    .min(1, 'Debes subir una imagen del comprobante de pago'),
 });
 
 export type MarcarPagoRealizadoInput = z.infer<typeof MarcarPagoRealizadoSchema>;
@@ -16,10 +17,12 @@ export type MarcarPagoRealizadoInput = z.infer<typeof MarcarPagoRealizadoSchema>
  * Schema para cambiar estado de pago (admin)
  */
 export const CambiarEstadoPagoSchema = z.object({
-  estado: z.enum(['confirmado', 'rechazado'], {
-    errorMap: () => ({ message: 'Estado debe ser "confirmado" o "rechazado"' }),
-  }),
+  estado: z.enum(
+    ['confirmado', 'rechazado'],
+    { message: 'Estado debe ser "confirmado" o "rechazado"' }
+  ),
 });
+
 
 export type CambiarEstadoPagoInput = z.infer<typeof CambiarEstadoPagoSchema>;
 
