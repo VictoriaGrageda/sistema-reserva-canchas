@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma';
+import { Prisma, PrismaClient } from '../generated/prisma';
 const prisma = new PrismaClient();
 
 type HorarioItem = {
@@ -21,6 +21,7 @@ export const ReservasRepo = {
       tipo_reserva?: string;
       recurrencia_dia_semana?: string;
       recurrencia_hora?: string;
+      extraAfterCreate?: (tx: Prisma.TransactionClient, reservaId: string) => Promise<void>;
     }
   ) {
     return prisma.$transaction(async (tx) => {
@@ -88,6 +89,10 @@ export const ReservasRepo = {
         },
       });
 
+      if (opciones?.extraAfterCreate) {
+        await opciones.extraAfterCreate(tx, reserva.id);
+      }
+
       // 6. Retornar la reserva completa
       return tx.reservas.findUnique({
         where: { id: reserva.id },
@@ -114,6 +119,7 @@ export const ReservasRepo = {
               correo: true,
             },
           },
+          mensualidad: true,
         },
       });
     });
@@ -156,6 +162,7 @@ export const ReservasRepo = {
           },
         },
         pagos: true,
+        mensualidad: true,
       },
       orderBy: { created_at: 'desc' },
       take: limit,
@@ -193,6 +200,7 @@ export const ReservasRepo = {
             telefono: true,
           },
         },
+        mensualidad: true,
       },
     });
   },
@@ -286,6 +294,16 @@ export const ReservasRepo = {
             },
           },
           pagos: true,
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              apellidos: true,
+              correo: true,
+              telefono: true,
+            },
+          },
+          mensualidad: true,
         },
       });
     });
@@ -346,6 +364,16 @@ export const ReservasRepo = {
             },
           },
           pagos: true,
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              apellidos: true,
+              correo: true,
+              telefono: true,
+            },
+          },
+          mensualidad: true,
         },
       });
     });
@@ -374,6 +402,16 @@ export const ReservasRepo = {
             },
           },
           pagos: true,
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              apellidos: true,
+              correo: true,
+              telefono: true,
+            },
+          },
+          mensualidad: true,
         },
       });
 
@@ -457,6 +495,7 @@ export const ReservasRepo = {
           },
         },
         pagos: true,
+        mensualidad: true,
       },
       orderBy: { created_at: 'desc' },
     });

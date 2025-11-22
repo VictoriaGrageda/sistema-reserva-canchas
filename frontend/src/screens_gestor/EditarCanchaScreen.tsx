@@ -77,11 +77,8 @@ const mapDayNameToKey = (dayName: DiaSemana): DayKey | null => {
 const makeTimes = () => {
   const out: string[] = [];
   for (let h = 6; h <= 23; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      const hh = String(h).padStart(2, "0");
-      const mm = String(m).padStart(2, "0");
-      out.push(`${hh}:${mm}`);
-    }
+    const hh = String(h).padStart(2, "0");
+    out.push(`${hh}:00`);
   }
   return out;
 };

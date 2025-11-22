@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -48,6 +48,7 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const cargarReservas = async () => {
     try {
@@ -129,7 +130,7 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
                       {primeraCancha?.complejo?.nombre || primeraCancha?.nombre}
                     </Text>
                     <Text style={styles.cardSubtitle}>
-                      {formatearFechaLegible(reserva.created_at)} · {formatearHoraLegible(reserva.created_at)}
+                      {formatearFechaLegible(reserva.created_at)} Â· {formatearHoraLegible(reserva.created_at)}
                     </Text>
                   </View>
                   <View style={[styles.badge, { backgroundColor: badge.color }]}> 
@@ -140,21 +141,34 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
 
                 <View style={styles.horariosSection}>
                   <Text style={styles.sectionTitle}>Horarios reservados:</Text>
-                  {reserva.items.slice(0, 3).map((item, idx) => (
-                    <View key={idx} style={styles.horarioRow}>
+                  {(expandedIds.has(reserva.id) ? reserva.items : reserva.items.slice(0, 3)).map((item, idx) => (
+                    <View key={`${reserva.id}-${idx}`} style={styles.horarioRow}>
                       <Ionicons name="time-outline" size={14} color={colors.dark} />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.horarioText}>
-                          {formatearFechaLegible(item.horario.fecha)} · {formatearHoraLegible(item.horario.hora_inicio)} - {formatearHoraLegible(item.horario.hora_fin)}
+                          {formatearFechaLegible(item.horario.fecha)} - {formatearHoraLegible(item.horario.hora_inicio)} - {formatearHoraLegible(item.horario.hora_fin)}
                         </Text>
                       </View>
                       <Text style={styles.precioItem}>{item.precio} Bs</Text>
                     </View>
                   ))}
-                  {reserva.items.length > 3 && (
-                    <Text style={styles.moreText}>
-                      +{reserva.items.length - 3} horarios más
-                    </Text>
+                  {reserva.items.length > 3 && !expandedIds.has(reserva.id) && (
+                    <TouchableOpacity onPress={() => setExpandedIds((prev) => new Set(prev).add(reserva.id))}>
+                      <Text style={styles.moreText}>
+                        +{reserva.items.length - 3} horarios mas (ver todos)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {reserva.items.length > 3 && expandedIds.has(reserva.id) && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const next = new Set(expandedIds);
+                        next.delete(reserva.id);
+                        setExpandedIds(next);
+                      }}
+                    >
+                      <Text style={styles.moreText}>Mostrar solo primeros 3</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
 
@@ -170,7 +184,7 @@ export default function HistorialReservasScreen({ navigation }: NavProps<"Histor
             <Ionicons name="document-text-outline" size={64} color="#CCC" />
             <Text style={styles.placeholder}>No tienes reservas en el historial</Text>
             <Text style={styles.emptySubtext}>
-              Tus reservas confirmadas y canceladas aparecerán aquí
+              Tus reservas confirmadas y canceladas aparecerÃ¡n aquÃ­
             </Text>
           </View>
         )}
@@ -321,3 +335,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

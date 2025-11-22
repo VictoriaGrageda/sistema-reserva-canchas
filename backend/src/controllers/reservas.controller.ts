@@ -8,12 +8,26 @@ import type { AuthedRequest } from '../middlewares/auth.middleware';
 const serializeReserva = (reserva: any) => {
   if (!reserva) return null;
 
+  const { mensualidad, ...rest } = reserva;
+
   return {
-    ...reserva,
+    ...rest,
     items: reserva.items?.map((item: any) => ({
       ...item,
       precio: item.precio ? Number(item.precio) : null,
     })),
+    mensualidad: mensualidad
+      ? {
+          ...mensualidad,
+          monto_total: mensualidad.monto_total ? Number(mensualidad.monto_total) : 0,
+          fecha_inicio: mensualidad.fecha_inicio
+            ? new Date(mensualidad.fecha_inicio).toISOString().split('T')[0]
+            : null,
+          fecha_fin: mensualidad.fecha_fin
+            ? new Date(mensualidad.fecha_fin).toISOString().split('T')[0]
+            : null,
+        }
+      : null,
   };
 };
 
@@ -196,14 +210,17 @@ export const ReservasController = {
       const usuario_id = req.user?.id;
       if (!usuario_id) {
         return res.status(401).json({ message: 'Usuario no autenticado' });
-      }
-
-      const reserva = await ReservasService.crearMensual(usuario_id, req.body);
-      return res.status(201).json({ data: serializeReserva(reserva) });
-    } catch (error: any) {
-      return res.status(error.status || 400).json({ message: error.message });
     }
-  },
+
+    const reserva = await ReservasService.crearMensual(usuario_id, req.body);
+    return res.status(201).json({ data: serializeReserva(reserva) });
+  } catch (error: any) {
+    return res.status(error.status || 400).json({
+      message: error.message,
+      missingSlots: error.missingSlots ?? [],
+    });
+  }
+},
 
   /**
    * POST /api/v1/reservas/mensual/preview

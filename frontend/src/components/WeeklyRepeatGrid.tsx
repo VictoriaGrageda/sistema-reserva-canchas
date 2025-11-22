@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
   weekItemTextActive: { color: '#fff' },
   weekRangeText: { color: colors.dark, opacity: 0.7, fontSize: 12 },
 
-  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  dayCol: { width: '48%', backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E6F1E9', padding: 10 },
+  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  dayCol: { width: '48%', marginBottom: 8, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E6F1E9', padding: 10 },
   dayTitle: { fontWeight: '800', color: colors.dark, marginBottom: 6 },
   summaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summaryText: { fontWeight: '700', color: colors.dark },
