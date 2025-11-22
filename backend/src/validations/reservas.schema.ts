@@ -67,6 +67,10 @@ const HoraHHMM = z
   .string()
   .regex(/^\d{2}:\d{2}$/i, 'Hora inválida. Formato HH:MM');
 
+const FechaYYYYMMDD = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/i, 'Fecha invǭlida. Formato YYYY-MM-DD');
+
 const RangoMensual = z.object({
   dia_semana: DiaSemanaZod,
   hora_inicio: HoraHHMM,
@@ -84,6 +88,9 @@ export const CrearReservaMensualSchema = z
     // Modo 2: múltiples rangos específicos (día + horas por fila)
     rangos: z.array(RangoMensual).min(1, 'Agregue al menos un rango').optional(),
     precio: z.number().positive().optional(),
+    fecha_inicio: FechaYYYYMMDD.optional(),
+    fecha_fin: FechaYYYYMMDD.optional(),
+    tipo_plan: z.string().min(1, 'Debe indicar un tipo de plan').optional(),
   })
   .refine((d) => {
     const modo2 = Array.isArray(d.rangos) && d.rangos.length > 0;
@@ -99,6 +106,23 @@ export const CrearReservaMensualSchema = z
     return !(modo1 && modo2);
   }, {
     message: 'No combine rangos con dia(s)_semana + horas. Use un solo modo.'
+  })
+  .refine((d) => {
+    if ((d.fecha_inicio && !d.fecha_fin) || (!d.fecha_inicio && d.fecha_fin)) {
+      return false;
+    }
+    return true;
+  }, {
+    message: 'Debe indicar fecha de inicio y fin del plan'
+  })
+  .refine((d) => {
+    if (d.fecha_inicio && d.fecha_fin) {
+      const inicio = new Date(d.fecha_inicio);
+      const fin = new Date(d.fecha_fin);
+      const diffDays = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays <= 30;
+    }
+    return true;
   });
 
 export type CrearReservaMensualInput = z.infer<typeof CrearReservaMensualSchema>;

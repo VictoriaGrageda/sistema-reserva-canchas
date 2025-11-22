@@ -13,10 +13,13 @@ export type CrearReservaMensualPayload = {
   cancha_id: string;
   dia_semana?: string; // "LUNES", "MARTES", etc. (legacy)
   dias_semana?: string[]; // Nuevo: múltiples días de la semana
-  hora_inicio: string; // "20:00"
-  hora_fin: string; // "21:00"
+  hora_inicio?: string; // "20:00"
+  hora_fin?: string; // "21:00"
   precio?: number;
   rangos?: Array<{ dia_semana: string; hora_inicio: string; hora_fin: string }>; // Nuevo: por día
+  fecha_inicio?: string; // YYYY-MM-DD
+  fecha_fin?: string; // YYYY-MM-DD
+  tipo_plan?: string;
 };
 
 export type CrearReservaRecurrentePayload = {
@@ -25,6 +28,29 @@ export type CrearReservaRecurrentePayload = {
   hora_inicio: string; // "20:00"
   hora_fin: string; // "21:00"
   precio?: number;
+};
+
+export type PreviewMensualResponse = {
+  count: number;
+  total: number;
+  slots: Array<{
+    id: string;
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+    precio: number;
+  }>;
+  expected: number;
+  missing: Array<{
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+  }>;
+  periodo: {
+    inicio: string;
+    fin: string;
+  };
+  tipo_plan: string;
 };
 
 export const ReservasAPI = {

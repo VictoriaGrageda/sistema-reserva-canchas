@@ -310,19 +310,21 @@ const [mapViewerMarkers, setMapViewerMarkers] = useState<ViewerMarker[]>([]);
 
   const volver = () => {
     if (canchaSeleccionada) {
-      // Si hay complejo seleccionado, volver a la lista de canchas del complejo
-      // Si no, volver a la lista de resultados de búsqueda
+      // Volver a la lista de canchas del complejo o de resultados
       setCanchaSeleccionada(null);
       setHorarios([]);
       setHorariosSeleccionados(new Set());
-    } else if (complejoSeleccionado) {
+      return;
+    }
+
+    if (complejoSeleccionado) {
       setComplejoSeleccionado(null);
       setCanchas([]);
-    } else {
-      // Volver a la búsqueda inicial
-      setComplejos([]);
-      setCanchasIndividuales([]);
+      return;
     }
+
+    // Cuando no hay selección activa, regresar al inicio
+    navigation.navigate("Home");
   };
 
   const obtenerEntradasMapa = () => {

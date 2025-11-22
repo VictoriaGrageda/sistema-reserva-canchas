@@ -58,6 +58,7 @@ export default function SolicitudesReservasScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filtro, setFiltro] = useState<"todos" | "pendientes" | "confirmados">("pendientes");
+  const [expandedPagos, setExpandedPagos] = useState<Set<string>>(new Set());
 
   const cargarPagos = async () => {
     try {
@@ -263,16 +264,29 @@ export default function SolicitudesReservasScreen({
                 {/* Horarios */}
                 <View style={styles.horariosSection}>
                   <Text style={styles.sectionTitle}>Horarios reservados:</Text>
-                  {pago.reserva.items.slice(0, 3).map((item, idx) => (
-                    <View key={idx} style={styles.horarioItem}>
+                  {(expandedPagos.has(pago.id) ? pago.reserva.items : pago.reserva.items.slice(0, 3)).map((item, idx) => (
+                    <View key={`${pago.id}-${idx}`} style={styles.horarioItem}>
                       <Ionicons name="time-outline" size={14} color={colors.dark} />
                       <Text style={styles.horarioText}>{formatHorarioLabel(item)}</Text>
                     </View>
                   ))}
-                  {pago.reserva.items.length > 3 && (
-                    <Text style={styles.moreText}>
-                      +{pago.reserva.items.length - 3} horarios más
-                    </Text>
+                  {pago.reserva.items.length > 3 && !expandedPagos.has(pago.id) && (
+                    <TouchableOpacity onPress={() => setExpandedPagos((prev) => new Set(prev).add(pago.id))}>
+                      <Text style={styles.moreText}>
+                        +{pago.reserva.items.length - 3} horarios más (ver todos)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {pago.reserva.items.length > 3 && expandedPagos.has(pago.id) && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const next = new Set(expandedPagos);
+                        next.delete(pago.id);
+                        setExpandedPagos(next);
+                      }}
+                    >
+                      <Text style={styles.moreText}>Mostrar menos</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
                 {/* Total */}
