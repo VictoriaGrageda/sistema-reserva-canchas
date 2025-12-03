@@ -372,7 +372,7 @@ if (availableSlots.length === 0) {
       const reserva = await ReservasRepo.crearConItems(usuario_id, horariosData, {
         tipo_reserva: 'mensual',
         extraAfterCreate: async (tx, reservaId) => {
-          await tx.mensualidades.create({
+          await (tx as any).mensualidades.create({
             data: {
               reserva_id: reservaId,
               usuario_id,
@@ -666,7 +666,7 @@ async crearRecurrente(
     }
 
     // Verificar que el admin sea dueÃ±o de la cancha (complejo o individual)
-    const primerItem = reserva.items[0];
+      const primerItem = (reserva as any).items[0] as any;
     if (!primerItem) {
       const err: any = new Error('Reserva sin horarios');
       err.status = 400;

@@ -120,7 +120,7 @@ export const ReservasRepo = {
             },
           },
           mensualidad: true,
-        },
+        }as any,
       });
     });
   },
@@ -163,7 +163,7 @@ export const ReservasRepo = {
         },
         pagos: true,
         mensualidad: true,
-      },
+      }as any,
       orderBy: { created_at: 'desc' },
       take: limit,
       skip: offset,
@@ -201,7 +201,7 @@ export const ReservasRepo = {
           },
         },
         mensualidad: true,
-      },
+      }as any,
     });
   },
 
@@ -225,7 +225,8 @@ export const ReservasRepo = {
       }
 
       // 2. Obtener horarios antiguos
-      const horariosAntiguosIds = reserva.items.map((item) => item.horario_id);
+      const reservaConItems = reserva as any;
+      const horariosAntiguosIds = reservaConItems.items.map((item: any) => item.horario_id);
 
       // 3. Eliminar items antiguos
       await tx.reserva_items.deleteMany({
@@ -304,7 +305,7 @@ export const ReservasRepo = {
             },
           },
           mensualidad: true,
-        },
+        }as any,
       });
     });
   },
@@ -315,17 +316,18 @@ export const ReservasRepo = {
   async cancelar(reserva_id: string) {
     return prisma.$transaction(async (tx) => {
       // 1. Obtener la reserva
-      const reserva = await tx.reservas.findUnique({
-        where: { id: reserva_id },
-        include: { items: true, pagos: true },
-      });
+        const reserva = await tx.reservas.findUnique({
+          where: { id: reserva_id },
+          include: { items: true, pagos: true },
+        });
 
-      if (!reserva) {
-        throw new Error('Reserva no encontrada');
-      }
+        if (!reserva) {
+          throw new Error('Reserva no encontrada');
+        }
 
-      // 2. Obtener IDs de horarios a liberar
-      const horariosIds = reserva.items.map((item) => item.horario_id);
+        // 2. Obtener IDs de horarios a liberar
+        const reservaConItems = reserva as any;
+        const horariosIds = reservaConItems.items.map((item: any) => item.horario_id);
 
       // 3. Liberar horarios
       await tx.horarios.updateMany({
@@ -374,7 +376,7 @@ export const ReservasRepo = {
             },
           },
           mensualidad: true,
-        },
+        }as any,
       });
     });
   },
@@ -412,17 +414,18 @@ export const ReservasRepo = {
             },
           },
           mensualidad: true,
-        },
+        }as any,
       });
 
       // Si se cancela, liberar horarios
       if (estado === 'cancelada') {
-        const horariosIds = reserva.items.map((item) => item.horario_id);
-        await tx.horarios.updateMany({
-          where: { id: { in: horariosIds } },
-          data: { disponible: true },
-        });
-      }
+        const reservaConItems = reserva as any;
+        const horariosIds = reservaConItems.items.map((item: any) => item.horario_id);
+          await tx.horarios.updateMany({
+            where: { id: { in: horariosIds } },
+            data: { disponible: true },
+          });
+        }
 
       return reserva;
     });
@@ -496,7 +499,7 @@ export const ReservasRepo = {
         },
         pagos: true,
         mensualidad: true,
-      },
+      }as any,
       orderBy: { created_at: 'desc' },
     });
   },
