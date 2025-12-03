@@ -15,7 +15,11 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sistema-reserva-canchas-1.onrender.com/api/v1",
+        "EXPO_PUBLIC_LOCATIONIQ_KEY": "pk.743ecf6f1799842997b51f2e7b0a323b"
+      }
     }
   },
   "submit": {
