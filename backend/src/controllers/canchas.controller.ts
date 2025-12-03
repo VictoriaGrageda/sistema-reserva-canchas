@@ -3,7 +3,6 @@ import { CanchasService } from '../services/canchas.service';
 import { Prisma } from '../generated/prisma';
 import type { AuthedRequest } from '../middlewares/auth.middleware';
 
-
 export const CanchasController = {
   async crear(req: AuthedRequest, res: Response) {
     try {
