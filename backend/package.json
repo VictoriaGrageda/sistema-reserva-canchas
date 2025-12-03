@@ -6,7 +6,7 @@
   "scripts": {
   "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
   "build": "tsc && npm run copy:prisma",
-  "copy:prisma": "xcopy src\\generated dist\\generated /E /I /Y",
+  "copy:prisma": "cp -r src/generated dist/generated",
   "start": "node dist/server.js",
   "test": "echo \"Error: no test specified\" && exit 1"
 }
