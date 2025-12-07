@@ -22,7 +22,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.sistema.canchas"
+      "package": "com.sistema.canchas",
+
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyD9n7p3YkzU6r4g0Y5QW8k1v3Z5X5F2Jc"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
