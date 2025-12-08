@@ -503,6 +503,20 @@ export default function EditarCanchaScreen({ navigation, route }: NavProps<"Edit
             </>
           )}
         </TouchableOpacity>
+        {saving && (
+          <Text
+            style={{
+              marginTop: 8,
+              textAlign: "center",
+              fontSize: 12,
+              color: colors.dark,
+              opacity: 0.7,
+            }}
+          >
+            Se esta guardando los horarios{"\n"}
+            Esta operación puede tardar algunos segundos...
+          </Text>
+        )}
       </ScrollView>
 
       {/* Modal de edición de día */}

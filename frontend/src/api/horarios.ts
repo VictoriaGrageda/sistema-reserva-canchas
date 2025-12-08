@@ -57,7 +57,8 @@ export const HorariosAPI = {
 
   // 🆕 Nuevas funciones
   generarBloques: (payload: GenerarBloquesPayload) =>
-    http.post("/horarios/generar-bloques", payload).then((r) => r.data),
+    http.post("/horarios/generar-bloques", payload, {timeout: 60000,})
+    .then((r) => r.data),
 
   guardarConfiguraciones: (cancha_id: string, configuraciones: ConfiguracionHorarioPayload[]) =>
     http.post(`/horarios/configuraciones/${cancha_id}`, { configuraciones }).then((r) => r.data),
